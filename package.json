@@ -1,0 +1,8 @@
+{
+  "name": "till",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "typecheck": "bunx tsc --noEmit -p ."
+  }
+}
