@@ -36,6 +36,7 @@
     "apps/pay": {
       "name": "@till/pay",
       "dependencies": {
+        "@arkiv-network/sdk": "0.8.1",
         "@privy-io/react-auth": "3.51.0",
         "react": "19.2.0",
         "react-dom": "19.2.0",
