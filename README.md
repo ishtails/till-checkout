@@ -63,6 +63,8 @@ _(to do: diagram)_
 6. 500 transactions per merchant per day, and 0.2 WBT of gas per day in total.
 7. It holds at most about 0.3 WBT.
 
+What worked and where I got stuck on Whitechain: [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md).
+
 ## Hedera
 - x402 endpoint: `GET /api/data` on the demo shop. Its 402 offers USDT on Whitechain and USDC on Hedera, and the agent picks one.
 - Agent's x402 payment through our facilitator: [`0.0.11155223@1793899446.429788504`](https://hashscan.io/testnet/transaction/0.0.11155223@1793899446.429788504) ($0.05 in testnet USDC for one call to `/api/data`, straight to the merchant `0.0.11155222`; our fee payer `0.0.11155223` paid the 0.016 HBAR fee, the agent paid none)
@@ -154,6 +156,9 @@ During the hack:
 - **Ports:** server 3001, pay app 5173, shop 3002, attacker review page 3004, look-alike API 3005. The agent has no port: it's a CLI run.
 - **The demo attack is a poisoned link, not an injected instruction.** Current models ignored injected instructions in every test run, so a demo built on that wouldn't reproduce.
 - **The agent runs on the `claude` CLI's login**, with its own system prompt and only the wallet's two tools, so no API key is needed.
+
+## License
+MIT, see [`LICENSE`](LICENSE).
 
 ## AI usage
 See `AI_USAGE.md`. The planning notes written before the event are in `design/`.
