@@ -19,6 +19,7 @@ export const config = {
   relayerKey: need("RELAYER_PRIVATE_KEY") as Hex,
   hederaFeePayerId: need("HEDERA_FEE_PAYER_ID"),
   hederaFeePayerKey: need("HEDERA_FEE_PAYER_KEY"),
+  arkivKey: process.env.ARKIV_PRIVATE_KEY as Hex | undefined, // optional: no key, no Arkiv receipts
   merchantsFile: resolve(root, process.env.MERCHANTS_FILE ?? "merchants.json"),
   storeFile: resolve(root, process.env.STORE_FILE ?? "data/store.json"),
   orderTtlSeconds: 30 * 60,

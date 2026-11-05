@@ -1,5 +1,6 @@
 import { Hono } from "hono"
 import { encodeFunctionData, getAddress, isAddress, type Hex } from "viem"
+import { saveReceipt } from "./arkiv"
 import { checkoutAbi, explorerTx } from "./chain"
 import { config } from "./config"
 import { findMerchant } from "./merchants"
@@ -50,6 +51,7 @@ pay.post("/v1/checkout/:id/pay", rateLimit, async c => {
     order.paidTo = merchant.evmAddress
     order.payTx = hash
     store.putOrder(order)
+    saveReceipt(order, { kind: "paid" })
     void sendWebhook(merchant, { type: "order.paid", orderId: order.id, amount: order.amount, txHash: hash, ts: Date.now() })
     return c.json({ txHash: hash, explorer: explorerTx(hash) })
   } catch (err) {
