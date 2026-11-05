@@ -64,9 +64,9 @@ _(to do: diagram)_
 7. It holds at most about 0.3 WBT.
 
 ## Hedera
-- x402 endpoint: `GET /api/data` on the demo shop
-- Settled payment: _(to do: transaction ID and HashScan link)_
-- Facilitator: ours (`apps/server`). It adds an expiry check and a replay cache to the library's checks. Fallback: x402.org, one line of config
+- x402 endpoint: `GET /api/data` on the demo shop. Its 402 offers USDT on Whitechain and USDC on Hedera, and the agent picks one.
+- Agent's x402 payment through our facilitator: [`0.0.11155223@1793899446.429788504`](https://hashscan.io/testnet/transaction/0.0.11155223@1793899446.429788504) ($0.05 in testnet USDC for one call to `/api/data`, straight to the merchant `0.0.11155222`; our fee payer `0.0.11155223` paid the 0.016 HBAR fee, the agent paid none)
+- Facilitator: ours (`apps/server`). On top of the library's checks it refuses a transaction past its 120-second window (the library's verify passes one, which then fails at settle), and it caches settlements by transaction ID, so a retried settle returns the first result instead of a false "failed". Fallback: x402.org, one line of config
 - Agent spending log (HCS topic): _(to do)_
 
 **The spending guard.** It runs inside the agent's payment tool, below the model, so a blocked payment is never signed. The demo agent's limits:
