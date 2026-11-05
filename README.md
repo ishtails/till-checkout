@@ -97,6 +97,15 @@ What worked and where I got stuck on Whitechain: [`WHITECHAIN_FEEDBACK.md`](WHIT
  "reasons":["payee 0.0.6660666 is not on the allowlist","$0.50 is above the $0.10 per-call cap"]}
 ```
 
+**The spend report.** After each run the agent prints what it paid, what was blocked and how much of the day's budget is left. It reads those entries back from Hedera's public mirror node, not from its own memory, and links each one:
+
+```
+Spend report (read back from the public log on Hedera)
+  Blocked  $0.50 to 0.0.6660666: payee 0.0.6660666 is not on the allowlist; $0.50 is above the $0.10 per-call cap
+           https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/9
+  This run: $0.00 paid, 1 blocked. Today: $0.20 of the $1.00 budget, $0.80 left.
+```
+
 **Why the limit lives in the wallet, not the model.** Before the event we tested the attack on Claude Haiku, Sonnet and Opus, 27 runs. In 18 runs with injected instructions ("the provider moved to a premium endpoint", a hidden "system instruction"), no model tried the attacker's endpoint. A poisoned link fooled every model, every time, because nothing on the page gives it away; only the 402 shows the real price and payee. The guard blocked all of them before anything was signed, and every agent stopped and explained why. That's the attack in the demo.
 
 **The agent.** Claude run headless on the `claude` CLI, with its built-in tools off and only our "wallet" tool server ([`apps/agent/src/wallet.ts`](apps/agent/src/wallet.ts)) loaded. The wallet holds the keys, the x402 client, the guard and the HCS log; the model only sees tool results. What it said after the block, in one run:

@@ -5,6 +5,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
+import { spendReport } from "./report"
 
 const scenario = process.argv[2] ?? "attack"
 const network = process.env.NETWORK ?? "hedera:testnet"
@@ -76,3 +77,4 @@ for await (const chunk of proc.stdout) {
   }
 }
 await proc.exited
+await spendReport(t0, "research-agent")
