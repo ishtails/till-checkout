@@ -4,6 +4,7 @@ import type { Address, Hex } from "viem"
 import { parseUnits } from "viem"
 import { agentExplorerTx, api, explorerTx, usdtBalance, type AgentPayment, type Order } from "./api"
 import { receiveTypes } from "./checkout"
+import { download, ledgerCsv } from "./csv"
 
 const USDT = "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
 const short = (s: string) => `${s.slice(0, 6)}…${s.slice(-4)}`
@@ -82,7 +83,16 @@ export function Dashboard() {
   return (
     <main className="mx-auto mt-12 max-w-3xl px-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Orders</h1>
+        <div className="flex items-baseline gap-4">
+          <h1 className="text-xl font-semibold">Orders</h1>
+          <button
+            className="text-sm text-emerald-700 underline disabled:opacity-50"
+            disabled={!orders || !agentPayments}
+            onClick={() => download(`till-${merchantId}-${new Date().toISOString().slice(0, 10)}.csv`, ledgerCsv(orders!, agentPayments!))}
+          >
+            Download CSV
+          </button>
+        </div>
         {!ready ? null : authenticated ? (
           <div className="text-right text-sm text-stone-600">
             <p>
