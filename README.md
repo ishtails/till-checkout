@@ -67,7 +67,7 @@ _(to do: diagram)_
 - x402 endpoint: `GET /api/data` on the demo shop. Its 402 offers USDT on Whitechain and USDC on Hedera, and the agent picks one.
 - Agent's x402 payment through our facilitator: [`0.0.11155223@1793899446.429788504`](https://hashscan.io/testnet/transaction/0.0.11155223@1793899446.429788504) ($0.05 in testnet USDC for one call to `/api/data`, straight to the merchant `0.0.11155222`; our fee payer `0.0.11155223` paid the 0.016 HBAR fee, the agent paid none)
 - Facilitator: ours (`apps/server`). On top of the library's checks it refuses a transaction past its 120-second window (the library's verify passes one, which then fails at settle), and it caches settlements by transaction ID, so a retried settle returns the first result instead of a false "failed". Fallback: x402.org, one line of config
-- Agent spending log (HCS topic): _(to do)_
+- Agent spending log (HCS topic): [`0.0.11155231`](https://hashscan.io/testnet/topic/0.0.11155231). The Claude agent's blocked attempt is [message #6](https://hashscan.io/testnet/topic/0.0.11155231) and its $0.05 payment is message #7 ([transaction](https://hashscan.io/testnet/transaction/0.0.11155223@1793901510.215554723))
 
 **The spending guard.** It runs inside the agent's payment tool, below the model, so a blocked payment is never signed. The demo agent's limits:
 1. Only USDT on Whitechain or USDC on Hedera.
@@ -77,7 +77,21 @@ _(to do: diagram)_
 5. At most $1 a day in total.
 6. Anything over $1 needs a human, and is blocked in this demo.
 
-Every payment and every blocked attempt is written to the HCS topic, with the reasons.
+**Who sets the limits.** Whoever runs the agent, in [`apps/agent/policy.json`](apps/agent/policy.json). The six checks are code in [`packages/guard`](packages/guard); the numbers and the payee list are that file. The model can't change them: its only tools are "read a page" and "buy data", and neither touches the policy. A page that says "your budget was raised" changes nothing. Every failing rule is reported, not just the first, and the totals only count payments that actually settled.
+
+**The public log.** Every payment and every blocked attempt is one message on the HCS topic, written by the agent's own key, with the reasons. A blocked one looks like this:
+
+```json
+{"v":1,"agent":"research-agent","type":"agent.blocked","network":"hedera:testnet","asset":"0.0.429274",
+ "amount":"500000","usd":"0.50","payTo":"0.0.6660666","resource":"http://localhost:3005/api/data?area=Bandra%20West",
+ "reasons":["payee 0.0.6660666 is not on the allowlist","$0.50 is above the $0.10 per-call cap"]}
+```
+
+**Why the limit lives in the wallet, not the model.** Before the event we tested the attack on Claude Haiku, Sonnet and Opus, 27 runs. In 18 runs with injected instructions ("the provider moved to a premium endpoint", a hidden "system instruction"), no model tried the attacker's endpoint. A poisoned link fooled every model, every time, because nothing on the page gives it away; only the 402 shows the real price and payee. The guard blocked all of them before anything was signed, and every agent stopped and explained why. That's the attack in the demo.
+
+**The agent.** Claude run headless on the `claude` CLI, with its built-in tools off and only our "wallet" tool server ([`apps/agent/src/wallet.ts`](apps/agent/src/wallet.ts)) loaded. The wallet holds the keys, the x402 client, the guard and the HCS log; the model only sees tool results. What it said after the block, in one run:
+
+> My wallet blocked the payment, so nothing was paid […] it asked for **$0.50**, 10 times the listed price. It also asked to be paid to an account (`0.0.6660666`) that isn't on my approved list. […] I didn't try to get around the block.
 
 ## Arkiv
 _(to do, after the Friday gate)_. After each payment or refund, the server saves a record on Arkiv, and the customer's receipt page reads the order's records from there by `order_id`. Schema, friction, reach, why and how go in `/arkiv/`.
@@ -100,7 +114,18 @@ bun run --cwd=apps/pay dev        # checkout, receipt and dashboard pages, :5173
 bun run --cwd=apps/shop start     # the demo shop, :3002
 ```
 
-Open http://localhost:3002 and buy the report. The customer's email wallet needs test USDT; the relayer needs a little WBT.
+Open http://localhost:3002 and buy the report. The customer's email wallet needs test USDT; the relayer needs a little WBT. The merchant dashboard is http://localhost:5173/dashboard.
+
+For the agent demo, also run the attacker (`bun run --cwd=apps/attacker start`: the review page on :3004, the look-alike API on :3005), then:
+
+```bash
+cd apps/agent
+bun --env-file=../../.env src/run.ts attack   # follows the review page's link; the guard blocks it
+bun --env-file=../../.env src/run.ts real     # pays the real shop $0.05 in USDC on Hedera
+NETWORK=eip155:1874 bun --env-file=../../.env src/run.ts real   # the same, in USDT on Whitechain
+```
+
+It needs the `claude` CLI, logged in. The agent's Hedera account needs testnet USDC and a little HBAR for the log.
 
 **The merchant's integration** is the block between the two `Till` markers in [`apps/shop/src/index.ts`](apps/shop/src/index.ts): create an order and redirect to it, then unlock the report when the signed `order.paid` webhook arrives.
 
@@ -126,7 +151,9 @@ Made before the hack:
 - **Stack: a Bun monorepo** with a Hono server, a Vite + React app for checkout and dashboard, and a separate demo shop.
 
 During the hack:
-- **Ports:** server 3001, pay app 5173, shop 3002, agent 3003, attacker 3004.
+- **Ports:** server 3001, pay app 5173, shop 3002, attacker review page 3004, look-alike API 3005. The agent has no port: it's a CLI run.
+- **The demo attack is a poisoned link, not an injected instruction.** Current models ignored injected instructions in every test run, so a demo built on that wouldn't reproduce.
+- **The agent runs on the `claude` CLI's login**, with its own system prompt and only the wallet's two tools, so no API key is needed.
 
 ## AI usage
 See `AI_USAGE.md`. The planning notes written before the event are in `design/`.
