@@ -31,6 +31,18 @@ export type CheckoutInfo = Order & {
   domain: { name: string; version: string; chainId: number; verifyingContract: Address }
 }
 
+export type AgentPayment = {
+  merchantId: string
+  network: string
+  amount: string // atomic, 6 decimals
+  payer: string
+  transaction: string
+  ts: number
+}
+
+export const agentExplorerTx = (p: AgentPayment) =>
+  p.network.startsWith("hedera") ? `https://hashscan.io/testnet/transaction/${p.transaction}` : explorerTx(p.transaction)
+
 export type RefundInfo = {
   from: Address
   to: Address
@@ -53,6 +65,7 @@ export const api = {
   pay: (id: string, body: { payer: Address; validAfter: number; validBefore: number; signature: Hex }) =>
     call<{ txHash: Hex }>(`/v1/checkout/${id}/pay`, { method: "POST", body: JSON.stringify(body) }),
   orders: (merchant: string) => call<Order[]>(`/v1/orders?merchant=${merchant}`),
+  agentPayments: () => call<AgentPayment[]>("/v1/agent-payments"),
   refundInfo: (id: string) => call<RefundInfo>(`/v1/orders/${id}/refund`),
   refund: (id: string, body: { amount: string; validAfter: number; validBefore: number; signature: Hex }) =>
     call<{ txHash: Hex }>(`/v1/orders/${id}/refund`, { method: "POST", body: JSON.stringify(body) }),

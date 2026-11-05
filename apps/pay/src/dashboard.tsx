@@ -2,7 +2,7 @@ import { usePrivy, useSignTypedData, useWallets } from "@privy-io/react-auth"
 import { useEffect, useState } from "react"
 import type { Address, Hex } from "viem"
 import { formatUnits } from "viem"
-import { api, explorerTx, usdtBalance, type Order } from "./api"
+import { agentExplorerTx, api, explorerTx, usdtBalance, type AgentPayment, type Order } from "./api"
 import { receiveTypes } from "./checkout"
 
 const USDT = "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
@@ -16,6 +16,7 @@ export function Dashboard() {
   const { wallets } = useWallets()
   const { signTypedData } = useSignTypedData()
   const [orders, setOrders] = useState<Order[]>()
+  const [agentPayments, setAgentPayments] = useState<AgentPayment[]>()
   const [balance, setBalance] = useState<number>()
   const [busy, setBusy] = useState<string>()
   const [error, setError] = useState<string>()
@@ -25,6 +26,9 @@ export function Dashboard() {
   // Checkouts that were opened but never paid aren't orders yet.
   const load = () => api.orders(merchantId).then(all => setOrders(all.filter(o => o.status !== "open")), e => setError(e.message))
   useEffect(() => void load(), [merchantId])
+  useEffect(() => {
+    api.agentPayments().then(all => setAgentPayments(all.filter(p => p.merchantId === merchantId)), e => setError(e.message))
+  }, [merchantId])
   useEffect(() => {
     if (address) usdtBalance(address, USDT).then(setBalance)
   }, [address, orders])
@@ -137,6 +141,43 @@ export function Dashboard() {
                   </tr>
                 )
               })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <h2 className="mt-10 text-xl font-semibold">Agent payments</h2>
+      <p className="mt-1 text-sm text-stone-500">Paid per API call over x402, straight to your wallet. These are final, so they can't be refunded.</p>
+      <div className="mt-4 rounded-2xl border border-stone-200 bg-white shadow-sm">
+        {!agentPayments ? (
+          <p className="p-6 text-stone-500">Loading…</p>
+        ) : agentPayments.length === 0 ? (
+          <p className="p-6 text-stone-500">No agent payments yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs text-stone-500">
+              <tr>
+                <th className="px-4 py-3 font-normal">When</th>
+                <th className="px-4 py-3 font-normal">Agent</th>
+                <th className="px-4 py-3 font-normal">Paid in</th>
+                <th className="px-4 py-3 text-right font-normal">Amount</th>
+                <th className="px-4 py-3 font-normal">Record</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agentPayments.map(p => (
+                <tr key={p.transaction} className="border-t border-stone-100">
+                  <td className="px-4 py-3 text-xs text-stone-500">{new Date(p.ts).toLocaleString()}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{p.payer.startsWith("0x") ? short(p.payer) : p.payer}</td>
+                  <td className="px-4 py-3">{p.network.startsWith("hedera") ? "USDC on Hedera" : "USDT on Whitechain"}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">${(Number(p.amount) / 1e6).toFixed(2)}</td>
+                  <td className="px-4 py-3">
+                    <a className="text-emerald-700 underline" href={agentExplorerTx(p)} target="_blank" rel="noreferrer">
+                      {p.network.startsWith("hedera") ? "HashScan" : "Explorer"} ↗
+                    </a>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}
