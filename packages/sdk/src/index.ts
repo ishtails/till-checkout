@@ -1,4 +1,12 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
+import { HTTPFacilitatorClient, x402ResourceServer } from "@x402/core/server"
+import { ExactEvmScheme } from "@x402/evm/exact/server"
+import { paymentMiddleware } from "@x402/hono"
+import type { MiddlewareHandler } from "hono"
+
+const WHITECHAIN = "eip155:1874"
+const WHITECHAIN_USDT = "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
+const toAtomic = (usd: string) => String(Math.round(Number(usd) * 1e6))
 
 export type TillOrder = {
   id: string
@@ -50,6 +58,40 @@ export class Checkout {
 
   getOrder(id: string) {
     return this.call<TillOrder>(`/v1/orders/${id}`)
+  }
+
+  private merchant?: Promise<{ payTo: Record<string, string> }>
+  private payTo = async (network: string) => {
+    this.merchant ??= this.call("/v1/merchant")
+    return (await this.merchant).payTo[network]
+  }
+
+  /**
+   * Charges per request over x402: unpaid calls get a 402 with the price, paid ones go through.
+   * Payments settle in USDT on Whitechain through Till's facilitator, straight to the merchant.
+   */
+  paywall({ price, description }: { price: string; description: string }): MiddlewareHandler {
+    const server = new x402ResourceServer([new HTTPFacilitatorClient({ url: `${this.baseUrl}/facilitator` })]).register(
+      WHITECHAIN,
+      new ExactEvmScheme(),
+    )
+    return paymentMiddleware(
+      {
+        description,
+        mimeType: "application/json",
+        accepts: [
+          {
+            scheme: "exact",
+            network: WHITECHAIN,
+            payTo: () => this.payTo(WHITECHAIN),
+            // The token has no version(); its EIP-712 domain is { "Tether USD", "1" }.
+            price: { asset: WHITECHAIN_USDT, amount: toAtomic(price), extra: { name: "Tether USD", version: "1" } },
+            maxTimeoutSeconds: 300,
+          },
+        ],
+      },
+      server,
+    )
   }
 
   /** Checks the X-Checkout-Signature HMAC over the raw body. Throws if it doesn't match. */

@@ -22,7 +22,15 @@ app.post("/webhooks/checkout", async c => {
   if (event.type === "order.paid") unlockReport(event.orderId)
   return c.text("ok")
 })
+
+// Agents: charge per call
+app.use("/api/data", checkout.paywall({ price: "0.05", description: "Mumbai rent data, one area" }))
 // ---- end of Till ----
+
+app.get("/api/data", c => {
+  const area = c.req.query("area")
+  return c.json(area ? (rentData.find(r => r.area.toLowerCase() === area.toLowerCase()) ?? { error: "unknown area" }) : rentData)
+})
 
 app.onError((err, c) => (err.message.includes("webhook signature") ? c.text("bad signature", 401) : c.text(err.message, 500)))
 
