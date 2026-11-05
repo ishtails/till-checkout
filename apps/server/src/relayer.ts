@@ -36,6 +36,24 @@ function rollDay() {
 
 export class RelayError extends Error {}
 
+/** Rule 6, before sending. Returns the reason if a cap is reached. */
+export function capReached(merchantId: string): string | undefined {
+  rollDay()
+  if (wbtSpent >= limits.wbtPerDay) return "relayer daily gas cap reached"
+  if ((txByMerchant.get(merchantId) ?? 0) >= limits.txPerMerchantPerDay) return "merchant daily transaction cap reached"
+}
+
+/** Rule 6, after sending: count the real fee from the receipt. */
+export async function recordFee(merchantId: string, hash: Hex) {
+  const receipt = await publicClient.waitForTransactionReceipt({ hash })
+  const l1Fee = BigInt((receipt as { l1Fee?: bigint }).l1Fee ?? 0n)
+  const fee = receipt.gasUsed * receipt.effectiveGasPrice + l1Fee
+  wbtSpent += fee
+  txByMerchant.set(merchantId, (txByMerchant.get(merchantId) ?? 0) + 1)
+  console.log(`relayed ${hash} for ${merchantId} status=${receipt.status} fee=${formatEther(fee)} WBT`)
+  return { receipt, fee }
+}
+
 /**
  * Sends one of the three allowed calls for a registered merchant, after simulating it.
  * Callers check rules 2 and 3 (registered merchant, real order) before calling this.
@@ -44,11 +62,8 @@ export async function relay(merchantId: string, to: Hex, data: Hex) {
   const selector = data.slice(0, 10)
   if (!allowed[to.toLowerCase()]?.includes(selector)) throw new RelayError("call not allowed")
 
-  rollDay()
-  if (wbtSpent >= limits.wbtPerDay) throw new RelayError("relayer daily gas cap reached")
-  if ((txByMerchant.get(merchantId) ?? 0) >= limits.txPerMerchantPerDay) {
-    throw new RelayError("merchant daily transaction cap reached")
-  }
+  const cap = capReached(merchantId)
+  if (cap) throw new RelayError(cap)
 
   // Rule 4: simulate the exact call. If it would revert, nothing is sent and we spend no gas.
   try {
@@ -58,12 +73,7 @@ export async function relay(merchantId: string, to: Hex, data: Hex) {
   }
 
   const hash = await walletClient.sendTransaction({ to, data })
-  const receipt = await publicClient.waitForTransactionReceipt({ hash })
-  const l1Fee = BigInt((receipt as { l1Fee?: bigint }).l1Fee ?? 0n)
-  const fee = receipt.gasUsed * receipt.effectiveGasPrice + l1Fee
-  wbtSpent += fee
-  txByMerchant.set(merchantId, (txByMerchant.get(merchantId) ?? 0) + 1)
-  console.log(`relayed ${selector} ${hash} status=${receipt.status} fee=${formatEther(fee)} WBT`)
+  const { receipt, fee } = await recordFee(merchantId, hash)
   if (receipt.status !== "success") throw new RelayError(`reverted on chain: ${hash}`)
   return { hash, fee, gasUsed: receipt.gasUsed }
 }

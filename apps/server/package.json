@@ -7,6 +7,8 @@
     "start": "bun --env-file=../../.env src/index.ts"
   },
   "dependencies": {
+    "@x402/core": "2.28.0",
+    "@x402/evm": "2.28.0",
     "hono": "4.13.16",
     "viem": "2.57.16"
   },

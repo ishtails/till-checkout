@@ -21,14 +21,30 @@ export type Order = {
   refunds: { amount: string; tx: Hex; ts: number }[]
 }
 
+// One agent payment settled through our facilitator. Keyed by (payer, nonce) on EVM or the
+// transaction ID on Hedera, which makes it the replay / idempotency cache as well.
+export type Settlement = {
+  key: string
+  merchantId: string
+  network: string
+  asset: string
+  amount: string // atomic
+  payer: string
+  payTo: string
+  transaction: string
+  ts: number
+  response: unknown // the SettleResponse returned the first time, returned again on a retry
+}
+
 type Data = {
   orders: Record<string, Order>
+  settlements: Record<string, Settlement>
 }
 
 // D9: in memory, saved to one JSON file on every change, so it survives restarts.
 function load(): Data {
-  if (!existsSync(config.storeFile)) return { orders: {} }
-  return JSON.parse(readFileSync(config.storeFile, "utf8"))
+  if (!existsSync(config.storeFile)) return { orders: {}, settlements: {} }
+  return { settlements: {}, ...JSON.parse(readFileSync(config.storeFile, "utf8")) }
 }
 
 const data = load()
@@ -46,6 +62,12 @@ export const store = {
       .sort((a, b) => b.createdAt - a.createdAt),
   putOrder(order: Order) {
     data.orders[order.id.toLowerCase()] = order
+    save()
+  },
+  getSettlement: (key: string) => data.settlements[key],
+  listSettlements: () => Object.values(data.settlements).sort((a, b) => b.ts - a.ts),
+  putSettlement(s: Settlement) {
+    data.settlements[s.key] = s
     save()
   },
 }

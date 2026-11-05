@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, defineChain, http, parseAbi } from "viem"
+import { createPublicClient, createWalletClient, defineChain, http, parseAbi, publicActions } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { config } from "./config"
 
@@ -15,6 +15,8 @@ export const explorerTx = (hash: string) => `https://explorer.testnet.whitechain
 export const relayer = privateKeyToAccount(config.relayerKey)
 export const publicClient = createPublicClient({ chain: whitechainSepolia, transport: http() })
 export const walletClient = createWalletClient({ account: relayer, chain: whitechainSepolia, transport: http() })
+// The same relayer key, with reads too: what @x402/evm's facilitator signer needs.
+export const relayerClient = walletClient.extend(publicActions)
 
 export const checkoutAbi = parseAbi([
   "function pay(bytes32 orderId, address merchant, address payer, uint128 amount, uint256 validAfter, uint256 validBefore, bytes signature)",
