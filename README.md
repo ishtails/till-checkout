@@ -56,6 +56,12 @@ _(to do: diagram)_
 
 **Who pays the gas.** Our relayer pays it, and the merchant covers that cost the way it covers card fees. One payment through the Checkout contract costs about 0.0009 WBT (183k gas at 5 gwei, [measured](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)). On testnet the relayer's WBT comes from the faucet, 0.5 WBT a day, which is about 500 payments. In production the merchant tops up a gas deposit.
 
+**The gas meter.** The merchant dashboard shows what the relayer has spent for that shop, read from each transaction's receipt on chain. So far for the demo shop: 0.0078 WBT across 5 payments, 4 refunds and 3 agent payments, about 0.00065 WBT each. That's the number a merchant needs to fund it in real life, in one of two ways:
+- **A prepaid gas deposit:** the merchant sends WBT (or USDT we swap to WBT) to its own balance, and the meter draws it down. At 0.00065 WBT a transaction, 1 WBT covers about 1,500.
+- **A small fee per payment:** taken in USDT from what the merchant receives, like a card fee, and used to buy WBT for the relayer. The merchant never holds WBT.
+
+Either way the customer and the agent never need WBT, and the per-merchant daily cap (rule 6 below) limits what one merchant can spend.
+
 **What stops someone draining the relayer:**
 1. It signs only three calls: `Checkout.pay`, `Checkout.refund` and USDT `transferWithAuthorization`.
 2. Only for registered merchants.
