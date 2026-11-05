@@ -16,7 +16,7 @@ createRoot(document.getElementById("root")!).render(
   <PrivyProvider
     appId={import.meta.env.VITE_PRIVY_APP_ID}
     config={{
-      loginMethods: ["email"],
+      loginMethods: ["email", "google"],
       embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" } },
       defaultChain: whitechain,
       supportedChains: [whitechain],
