@@ -27,9 +27,16 @@ app.post("/webhooks/checkout", async c => {
 app.use("/api/data", checkout.paywall({ price: "0.05", description: "Mumbai rent data, one area" }))
 // ---- end of Till ----
 
+// The API's answer says what each number is, so an agent can quote it without guessing.
+const forApi = (r: (typeof rentData)[number]) => ({
+  area: r.area,
+  median_monthly_rent_inr: { "2BHK": r.bhk2, "1BHK": r.bhk1 },
+  as_of: "2026-11-01",
+})
 app.get("/api/data", c => {
   const area = c.req.query("area")
-  return c.json(area ? (rentData.find(r => r.area.toLowerCase() === area.toLowerCase()) ?? { error: "unknown area" }) : rentData)
+  const row = area && rentData.find(r => r.area.toLowerCase() === area.toLowerCase())
+  return c.json(area ? (row ? forApi(row) : { error: "unknown area" }) : rentData.map(forApi))
 })
 
 app.onError((err, c) => (err.message.includes("webhook signature") ? c.text("bad signature", 401) : c.text(err.message, 500)))
