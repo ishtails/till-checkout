@@ -1,0 +1,12 @@
+{
+  "name": "@till/shop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun --env-file=../../.env src/index.ts"
+  },
+  "dependencies": {
+    "@till/sdk": "workspace:*",
+    "hono": "4.13.16"
+  }
+}
