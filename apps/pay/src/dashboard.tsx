@@ -1,7 +1,7 @@
 import { usePrivy, useSignTypedData, useWallets } from "@privy-io/react-auth"
 import { useEffect, useState } from "react"
 import type { Address, Hex } from "viem"
-import { formatUnits } from "viem"
+import { parseUnits } from "viem"
 import { agentExplorerTx, api, explorerTx, usdtBalance, type AgentPayment, type Order } from "./api"
 import { receiveTypes } from "./checkout"
 
@@ -19,6 +19,8 @@ export function Dashboard() {
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>()
   const [balance, setBalance] = useState<number>()
   const [busy, setBusy] = useState<string>()
+  // The refund amount typed for each order, in USD. Empty means the full amount left.
+  const [amounts, setAmounts] = useState<Record<string, string>>({})
   const [error, setError] = useState<string>()
 
   const address = wallets.find(w => w.walletClientType === "privy")?.address as Address | undefined
@@ -39,6 +41,10 @@ export function Dashboard() {
     setError(undefined)
     try {
       const info = await api.refundInfo(order.id)
+      const left = BigInt(info.remainingAtomic)
+      const typed = amounts[order.id]?.trim()
+      const value = typed ? parseUnits(typed, 6) : left
+      if (value <= 0n || value > left) throw new Error(`Refund between $0.01 and $${(Number(left) / 1e6).toFixed(2)}.`)
       if (info.from.toLowerCase() !== address.toLowerCase()) {
         throw new Error(`This order was paid to ${short(info.from)}. Sign in with that wallet to refund it.`)
       }
@@ -50,7 +56,7 @@ export function Dashboard() {
           message: {
             from: address,
             to: info.to,
-            value: info.remainingAtomic,
+            value: value.toString(),
             validAfter: "0",
             validBefore: String(info.validBefore),
             nonce: info.nonce,
@@ -59,11 +65,12 @@ export function Dashboard() {
         { address, uiOptions: { showWalletUIs: false } },
       )
       await api.refund(order.id, {
-        amount: formatUnits(BigInt(info.remainingAtomic), 6),
+        amount: typed || (Number(left) / 1e6).toString(),
         validAfter: 0,
         validBefore: info.validBefore,
         signature: signature as Hex,
       })
+      setAmounts(a => ({ ...a, [order.id]: "" }))
       await load()
     } catch (e) {
       setError((e as Error).message)
@@ -120,7 +127,10 @@ export function Dashboard() {
                       <p className="text-xs text-stone-400">{new Date(o.createdAt * 1000).toLocaleString()}</p>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">{o.payer ? short(o.payer) : "–"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">${Number(o.amount).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      ${Number(o.amount).toFixed(2)}
+                      {refunded > 0 && o.status !== "refunded" && <p className="text-xs text-amber-700">${refunded.toFixed(2)} refunded</p>}
+                    </td>
                     <td className="px-4 py-3">
                       <a className="text-emerald-700 underline" href={explorerTx(o.refunds.at(-1)?.tx ?? o.payTx!)} target="_blank" rel="noreferrer">
                         {o.status === "refunded" ? "Refunded" : refunded > 0 ? "Partly refunded" : "Paid"} ↗
@@ -129,13 +139,23 @@ export function Dashboard() {
                     <td className="px-4 py-3 text-right">
                       {/* Only the wallet that was paid can sign the refund. */}
                       {o.status === "paid" && address && o.paidTo?.toLowerCase() === address.toLowerCase() && (
-                        <button
-                          className="rounded-lg border border-stone-300 px-3 py-1 disabled:opacity-50"
-                          disabled={busy !== undefined}
-                          onClick={() => refund(o)}
-                        >
-                          {busy === o.id ? "Refunding…" : `Refund $${(Number(o.amount) - refunded).toFixed(2)}`}
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-stone-400">$</span>
+                          <input
+                            className="w-16 rounded-lg border border-stone-300 px-2 py-1 text-right tabular-nums"
+                            inputMode="decimal"
+                            placeholder={(Number(o.amount) - refunded).toFixed(2)}
+                            value={amounts[o.id] ?? ""}
+                            onChange={e => setAmounts(a => ({ ...a, [o.id]: e.target.value }))}
+                          />
+                          <button
+                            className="rounded-lg border border-stone-300 px-3 py-1 disabled:opacity-50"
+                            disabled={busy !== undefined}
+                            onClick={() => refund(o)}
+                          >
+                            {busy === o.id ? "Refunding…" : "Refund"}
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
