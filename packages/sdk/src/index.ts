@@ -1,11 +1,14 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
 import { HTTPFacilitatorClient, x402ResourceServer } from "@x402/core/server"
 import { ExactEvmScheme } from "@x402/evm/exact/server"
+import { ExactHederaScheme } from "@x402/hedera/exact/server"
 import { paymentMiddleware } from "@x402/hono"
 import type { MiddlewareHandler } from "hono"
 
 const WHITECHAIN = "eip155:1874"
 const WHITECHAIN_USDT = "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
+const HEDERA = "hedera:testnet"
+const HEDERA_USDC = "0.0.429274"
 const toAtomic = (usd: string) => String(Math.round(Number(usd) * 1e6))
 
 export type TillOrder = {
@@ -68,13 +71,13 @@ export class Checkout {
 
   /**
    * Charges per request over x402: unpaid calls get a 402 with the price, paid ones go through.
-   * Payments settle in USDT on Whitechain through Till's facilitator, straight to the merchant.
+   * The agent picks USDT on Whitechain or USDC on Hedera. Either way it settles through Till's facilitator,
+   * straight to the merchant.
    */
   paywall({ price, description }: { price: string; description: string }): MiddlewareHandler {
-    const server = new x402ResourceServer([new HTTPFacilitatorClient({ url: `${this.baseUrl}/facilitator` })]).register(
-      WHITECHAIN,
-      new ExactEvmScheme(),
-    )
+    const server = new x402ResourceServer([new HTTPFacilitatorClient({ url: `${this.baseUrl}/facilitator` })])
+      .register(WHITECHAIN, new ExactEvmScheme())
+      .register(HEDERA, new ExactHederaScheme())
     return paymentMiddleware(
       {
         description,
@@ -87,6 +90,14 @@ export class Checkout {
             // The token has no version(); its EIP-712 domain is { "Tether USD", "1" }.
             price: { asset: WHITECHAIN_USDT, amount: toAtomic(price), extra: { name: "Tether USD", version: "1" } },
             maxTimeoutSeconds: 300,
+          },
+          {
+            scheme: "exact",
+            network: HEDERA,
+            payTo: () => this.payTo(HEDERA),
+            price: { asset: HEDERA_USDC, amount: toAtomic(price) },
+            // A Hedera transaction is only valid for 120 s after it's signed. The fee payer comes from the facilitator.
+            maxTimeoutSeconds: 120,
           },
         ],
       },
