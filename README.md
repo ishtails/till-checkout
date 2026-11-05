@@ -1,3 +1,5 @@
+<img src="assets/logo.png" alt="Till logo: a cash drawer" width="96" align="left">
+
 # Till
 
 Get paid by people and AI agents that can't be tricked into overpaying.
