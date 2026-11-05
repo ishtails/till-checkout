@@ -96,7 +96,11 @@ export function guard(
 ) {
   const load = (): Spent => (existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : { day: today(), total: 0, byMerchant: {} })
 
+  // The response hook doesn't always get the 402, so remember which resource is being paid for.
+  let resource: string | undefined
+
   client.onBeforePaymentCreation(async ({ paymentRequired, selectedRequirements: r }) => {
+    resource = paymentRequired.resource?.url
     const { usd, reasons } = check(policy, load(), r)
     if (reasons.length === 0) return
     await onDecision?.({
@@ -106,7 +110,7 @@ export function guard(
       amount: r.amount,
       usd: usd.toFixed(2),
       payTo: r.payTo,
-      resource: paymentRequired.resource?.url,
+      resource,
       reasons,
     })
     return { abort: true, reason: `BLOCKED: ${reasons.join("; ")}` }
@@ -123,7 +127,7 @@ export function guard(
       amount: r.amount,
       usd: usd.toFixed(2),
       payTo: r.payTo,
-      resource: paymentRequired?.resource?.url,
+      resource: paymentRequired?.resource?.url ?? resource,
       tx: settleResponse.transaction,
     })
   })
