@@ -1,0 +1,23 @@
+{
+  "name": "@till/pay",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5173 --strictPort",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@privy-io/react-auth": "3.51.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "viem": "2.57.16"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "5.1.0",
+    "tailwindcss": "4.3.4",
+    "vite": "7.1.12"
+  }
+}

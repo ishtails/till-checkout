@@ -1,0 +1,56 @@
+import type { Address, Hex } from "viem"
+
+const API = import.meta.env.VITE_API_URL ?? "http://localhost:3001"
+
+export const explorerTx = (hash: string) => `https://explorer.testnet.whitechain.io/tx/${hash}`
+
+export type Order = {
+  id: Hex
+  merchant: string
+  description: string
+  amount: string
+  refunded: string
+  status: "open" | "paid" | "refunded"
+  payer?: Address
+  payTx?: Hex
+  refunds: { amount: string; tx: Hex; ts: number }[]
+  returnUrl: string
+  createdAt: number
+}
+
+export type CheckoutInfo = Order & {
+  merchantName: string
+  amountAtomic: string
+  token: Address
+  contract: Address
+  chainId: number
+  merchantAddress: Address
+  nonce: Hex
+  validBefore: number
+  domain: { name: string; version: string; chainId: number; verifyingContract: Address }
+}
+
+async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(API + path, { ...init, headers: { "content-type": "application/json", ...init?.headers } })
+  const body = await res.json()
+  if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`)
+  return body
+}
+
+export const api = {
+  checkout: (id: string) => call<CheckoutInfo>(`/v1/checkout/${id}`),
+  order: (id: string) => call<Order>(`/v1/orders/${id}`),
+  pay: (id: string, body: { payer: Address; validAfter: number; validBefore: number; signature: Hex }) =>
+    call<{ txHash: Hex }>(`/v1/checkout/${id}/pay`, { method: "POST", body: JSON.stringify(body) }),
+}
+
+export const usdtBalance = async (address: Address, token: Address) => {
+  // balanceOf(address) via a plain eth_call, so the page needs no extra client setup.
+  const data = "0x70a08231" + address.slice(2).toLowerCase().padStart(64, "0")
+  const res = await fetch("https://rpc.testnet.whitechain.io", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: token, data }, "latest"] }),
+  }).then(r => r.json())
+  return Number(BigInt(res.result)) / 1e6
+}
