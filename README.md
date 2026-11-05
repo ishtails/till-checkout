@@ -83,7 +83,26 @@ Every payment and every blocked attempt is written to the HCS topic, with the re
 _(to do, after the Friday gate)_. After each payment or refund, the server saves a record on Arkiv, and the customer's receipt page reads the order's records from there by `order_id`. Schema, friction, reach, why and how go in `/arkiv/`.
 
 ## Setup
-_(to do)_
+Needs [Bun](https://bun.sh) 1.4 and, for the contract, [Foundry](https://getfoundry.sh).
+
+```bash
+git clone --recurse-submodules https://github.com/ishtails/till-checkout && cd till-checkout
+bun install
+cp .env.example .env                    # fill in keys; see the comments in the file
+cp merchants.example.json merchants.json # one merchant: API key, webhook secret, payout addresses
+```
+
+Run each in its own terminal:
+
+```bash
+bun run --cwd=apps/server start   # checkout server and relayer, :3001
+bun run --cwd=apps/pay dev        # checkout, receipt and dashboard pages, :5173
+bun run --cwd=apps/shop start     # the demo shop, :3002
+```
+
+Open http://localhost:3002 and buy the report. The customer's email wallet needs test USDT; the relayer needs a little WBT.
+
+**The merchant's integration** is the block between the two `Till` markers in [`apps/shop/src/index.ts`](apps/shop/src/index.ts): create an order and redirect to it, then unlock the report when the signed `order.paid` webhook arrives.
 
 ## What's mocked
 - The customer's wallet is funded before the demo. In real use they'd withdraw USDT from an exchange to it.
