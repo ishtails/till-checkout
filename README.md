@@ -46,13 +46,13 @@ _(to do: diagram)_
 
 ## Whitechain
 - Checkout contract (verified): [`0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6`](https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6)
-- Customer's gasless USDT payment: _(to do)_
+- Customer's gasless USDT payment: [`0x93f3…6ab3`](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3) (first one, by script: 0.10 USDT, sent by our relayer; the customer holds no WBT)
 - Refund linked to that order: _(to do)_
 - Agent's x402 payment through our facilitator: _(to do)_
 
 **Why this needs on-chain stablecoin settlement on Whitechain.** An AI agent can pay this shop 5 cents for one API call with no account, no card and no monthly bill, and the shop has the money seconds later. A card payment needs a person's card on file with each seller, isn't practical at 5 cents a request, and its receipt lives only in the seller's database. Here the payment, its receipt and the refund linked to it are public records the customer can check without trusting the shop or us. Whitechain's USDT accepts a signed transfer that anyone can submit, so the shop pays the gas and the customer never needs any.
 
-**Who pays the gas.** Our relayer pays it, and the merchant covers that cost the way it covers card fees. One payment costs about 0.0005 WBT _(to do: measured tx link)_. On testnet the relayer's WBT comes from the faucet, 0.5 WBT a day, which is several hundred payments. In production the merchant tops up a gas deposit.
+**Who pays the gas.** Our relayer pays it, and the merchant covers that cost the way it covers card fees. One payment through the Checkout contract costs about 0.0009 WBT (183k gas at 5 gwei, [measured](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)). On testnet the relayer's WBT comes from the faucet, 0.5 WBT a day, which is about 500 payments. In production the merchant tops up a gas deposit.
 
 **What stops someone draining the relayer:**
 1. It signs only three calls: `Checkout.pay`, `Checkout.refund` and USDT `transferWithAuthorization`.
