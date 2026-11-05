@@ -56,6 +56,15 @@
         "hono": "4.13.16",
       },
     },
+    "packages/guard": {
+      "name": "@till/guard",
+      "dependencies": {
+        "@x402/core": "2.28.0",
+      },
+      "devDependencies": {
+        "@types/bun": "1.4.4",
+      },
+    },
     "packages/sdk": {
       "name": "@till/sdk",
       "dependencies": {
@@ -590,6 +599,8 @@
     "@tanstack/virtual-core": ["@tanstack/virtual-core@3.19.11", "", {}, "sha512-/5iHb0RHBvj8Di59FDs4ESNm45jls33aZAi4zccVXZjc/6ZvwQP6nzEYeT6weXjTf9E6/vrp2JhYWRyO+ZP13A=="],
 
     "@till/agent": ["@till/agent@workspace:apps/agent"],
+
+    "@till/guard": ["@till/guard@workspace:packages/guard"],
 
     "@till/pay": ["@till/pay@workspace:apps/pay"],
 
