@@ -43,6 +43,14 @@ export type AgentPayment = {
 export const agentExplorerTx = (p: AgentPayment) =>
   p.network.startsWith("hedera") ? `https://hashscan.io/testnet/transaction/${p.transaction}` : explorerTx(p.transaction)
 
+export type GasMeter = {
+  totalWbt: string
+  perTxWbt: string
+  payments: { count: number; wbt: string }
+  refunds: { count: number; wbt: string }
+  agentPayments: { count: number; wbt: string }
+}
+
 export type RefundInfo = {
   from: Address
   to: Address
@@ -65,6 +73,7 @@ export const api = {
   pay: (id: string, body: { payer: Address; validAfter: number; validBefore: number; signature: Hex }) =>
     call<{ txHash: Hex }>(`/v1/checkout/${id}/pay`, { method: "POST", body: JSON.stringify(body) }),
   orders: (merchant: string) => call<Order[]>(`/v1/orders?merchant=${merchant}`),
+  gas: (merchant: string) => call<GasMeter>(`/v1/gas?merchant=${merchant}`),
   agentPayments: () => call<AgentPayment[]>("/v1/agent-payments"),
   refundInfo: (id: string) => call<RefundInfo>(`/v1/orders/${id}/refund`),
   refund: (id: string, body: { amount: string; validAfter: number; validBefore: number; signature: Hex }) =>

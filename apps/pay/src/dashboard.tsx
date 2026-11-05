@@ -2,7 +2,7 @@ import { usePrivy, useSignTypedData, useWallets } from "@privy-io/react-auth"
 import { useEffect, useState } from "react"
 import type { Address, Hex } from "viem"
 import { parseUnits } from "viem"
-import { agentExplorerTx, api, explorerTx, usdtBalance, type AgentPayment, type Order } from "./api"
+import { agentExplorerTx, api, explorerTx, usdtBalance, type AgentPayment, type GasMeter, type Order } from "./api"
 import { receiveTypes } from "./checkout"
 import { download, ledgerCsv } from "./csv"
 
@@ -18,6 +18,7 @@ export function Dashboard() {
   const { signTypedData } = useSignTypedData()
   const [orders, setOrders] = useState<Order[]>()
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>()
+  const [gas, setGas] = useState<GasMeter>()
   const [balance, setBalance] = useState<number>()
   const [busy, setBusy] = useState<string>()
   // The refund amount typed for each order, in USD. Empty means the full amount left.
@@ -29,6 +30,9 @@ export function Dashboard() {
   // Checkouts that were opened but never paid aren't orders yet.
   const load = () => api.orders(merchantId).then(all => setOrders(all.filter(o => o.status !== "open")), e => setError(e.message))
   useEffect(() => void load(), [merchantId])
+  useEffect(() => {
+    api.gas(merchantId).then(setGas, () => {})
+  }, [merchantId, orders])
   useEffect(() => {
     api.agentPayments().then(all => setAgentPayments(all.filter(p => p.merchantId === merchantId)), e => setError(e.message))
   }, [merchantId])
@@ -112,6 +116,17 @@ export function Dashboard() {
         )}
       </div>
       {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
+
+      {gas && (
+        <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+          <p className="text-xs text-stone-500">Gas we paid for you on Whitechain</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{Number(gas.totalWbt).toFixed(4)} WBT</p>
+          <p className="mt-1 text-sm text-stone-600">
+            {gas.payments.count} payments, {gas.refunds.count} refunds and {gas.agentPayments.count} agent payments, about{" "}
+            {Number(gas.perTxWbt).toFixed(5)} WBT each. Your customers and agents paid none.
+          </p>
+        </div>
+      )}
 
       <div className="mt-6 rounded-2xl border border-stone-200 bg-white shadow-sm">
         {!orders ? (
