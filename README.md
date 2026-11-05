@@ -10,7 +10,7 @@ The spending guard: the agent's limits are checked before anything is signed, an
 
 ## Proof
 
-Everything in the demo happened on testnet. Click any of these:
+Everything in the demo happened on testnet. Each of these is a link you can open:
 
 | What happened | Where |
 |---|---|
@@ -22,13 +22,13 @@ Everything in the demo happened on testnet. Click any of these:
 | An agent paid $0.05 in USDT on Whitechain over x402, through our facilitator | [Whitechain tx](https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20) |
 | The receipt page reads the order (paid $5, refunded $2 and $3) from Arkiv | [Arkiv explorer](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20order_id%20%3D%20str('0x1b44530319fbffb44ec51e0cec380d6bb019806795a05c064ba28d412a40f0b4')%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)) |
 
-## For judges
+## Built on
 
-| Sponsor | What you asked for | Where it is |
+| | What Till uses it for | More |
 |---|---|---|
-| **Whitechain** (Operate, Scale) | Verified contract, a USDT payment in the main flow, a ~20-line drop-in, both views, past the first payment, gas economics and drain protection, feedback file | [Whitechain section](#whitechain) |
-| **Hedera** (AI Agents That Pay) | An x402 endpoint settling on Hedera, an agent paying with no human, the transaction ID; spending controls, an HCS audit log, USDC | [Hedera section](#hedera) |
-| **Arkiv** (Build on Arkiv) | Writes to Arkiv, a user-visible read, the writer wallet and a query, the `/arkiv` files | [Arkiv section](#arkiv) |
+| **Whitechain** | The money. Customers pay in USDT with no gas, through our relayer and a small verified contract. Merchants refund in full or in part, and export a CSV. Agents pay per call over x402, through our facilitator | [Whitechain](#whitechain) |
+| **Hedera** | The agents. They pay per call in USDC over x402, through a facilitator we run, and every payment and blocked attempt goes on a public HCS log | [Hedera](#hedera) |
+| **Arkiv** | The receipts. One record per payment or refund, read straight from Arkiv by the receipt page and "Your receipts" | [Arkiv](#arkiv) |
 
 ## Why it matters
 Merchants want AI agents as customers: an agent can pay five cents for one API call, which a card can't. But people will only let an agent spend if its limits hold, and agents are easy to trick. Till covers both sides:
@@ -80,7 +80,7 @@ flowchart LR
 ```
 
 ## Whitechain
-**Checklist:** contract verified ✅ · USDT `0xcedf…55a7` payment in the main flow ✅ · why on-chain settlement ✅ · ~20-line drop-in ✅ · merchant and customer views ✅ · past the first payment (refunds, partial refunds, CSV) ✅ · who pays gas and what stops draining ✅ · [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md) ✅
+**In short:** a verified Checkout contract, gasless USDT payments in the main flow, a ~20-line integration, merchant and customer views, refunds and an accountant's export, and an honest look at who pays the gas. What it was like to build: [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md).
 
 - Checkout contract (verified): [`0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6`](https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6)
 - Customer's gasless USDT payment: [`0x4646…7316`](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) ($5 from an email wallet on the checkout page, sent by our relayer; the customer holds no WBT). The first one, by script: [`0x93f3…6ab3`](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)
@@ -111,7 +111,7 @@ Either way the customer and the agent never need WBT, and the per-merchant daily
 What worked and where I got stuck on Whitechain: [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md).
 
 ## Hedera
-**Checklist:** x402 endpoint settling on Hedera testnet through our own facilitator ✅ · agent pays with no human approving ✅ · Hedera transaction ID ✅ · spending controls ✅ · HCS audit log of agent spending ✅ · settles in USDC (HTS) ✅
+**In short:** an x402 endpoint that settles in USDC on Hedera through our own facilitator, an agent that pays with no human approving, the spending limits it can't talk its way past, and a public HCS log of everything it paid or was stopped from paying.
 
 - x402 endpoint: `GET /api/data` on the demo shop. Its 402 offers USDT on Whitechain and USDC on Hedera, and the agent picks one.
 - Agent's x402 payment through our facilitator: [`0.0.11155223@1793899446.429788504`](https://hashscan.io/testnet/transaction/0.0.11155223@1793899446.429788504) ($0.05 in testnet USDC for one call to `/api/data`, straight to the merchant `0.0.11155222`; our fee payer `0.0.11155223` paid the 0.016 HBAR fee, the agent paid none)
@@ -152,7 +152,7 @@ Spend report (read back from the public log on Hedera)
 > My wallet blocked the payment, so nothing was paid […] it asked for **$0.50**, 10 times the listed price. It also asked to be paid to an account (`0.0.6660666`) that isn't on my approved list. […] I didn't try to get around the block.
 
 ## Arkiv
-**Checklist:** writes to Arkiv testnet ✅ · user-visible features read from Arkiv ✅ · writer wallet and a query below ✅ · [`/arkiv`](arkiv/) files ✅ · MIT license ✅
+**In short:** every payment and refund is saved on Arkiv, and the customer's receipt pages read from there. The writer wallet and a query to run are below; the schema and notes are in [`/arkiv`](arkiv/).
 
 Every payment and refund is saved as a receipt record on Arkiv (Rabdi testnet). The customer's receipt page and "Your receipts" read those records straight from Arkiv in the browser, so what the customer sees doesn't depend on the shop's database or on our server.
 
