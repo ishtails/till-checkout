@@ -113,7 +113,20 @@ Spend report (read back from the public log on Hedera)
 > My wallet blocked the payment, so nothing was paid […] it asked for **$0.50**, 10 times the listed price. It also asked to be paid to an account (`0.0.6660666`) that isn't on my approved list. […] I didn't try to get around the block.
 
 ## Arkiv
-_(to do, after the Friday gate)_. After each payment or refund, the server saves a record on Arkiv, and the customer's receipt page reads the order's records from there by `order_id`. Schema, friction, reach, why and how go in `/arkiv/`.
+Every payment and refund is saved as a receipt record on Arkiv (Rabdi testnet). The customer's receipt page and "Your receipts" read those records straight from Arkiv in the browser, so what the customer sees doesn't depend on the shop's database or on our server.
+
+- **Receipt page** (`/receipt/<order>`): the payment and every refund, read from the order's records on Arkiv, with an "On Arkiv ↗" link to the same query on Rabdi's entity explorer. It still loads if our server is down.
+- **Your receipts** (`/receipts`): every purchase one wallet made from any Till shop, from one query by `payer`.
+- **Writes:** the server saves one record after each confirmed payment or refund, off the payment path ([`apps/server/src/arkiv.ts`](apps/server/src/arkiv.ts)). The schema is shared by the writer and the pages ([`packages/receipts`](packages/receipts/src/index.ts)).
+- **Writer wallet:** `0xffE2359A07d0e193621419008eeE8D7f57f9a326`. Every read filters on it, so a record from any other wallet never shows on a receipt.
+- **One query to run** (paste into Rabdi's [entity explorer](https://rabdi.explorer.arkiv.network/entity-explorer)):
+  ```
+  arkiv.schema = str('till.receipt') AND $owner = addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)
+  ```
+  The demo's records: [one order](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20order_id%20%3D%20str('0x1b44530319fbffb44ec51e0cec380d6bb019806795a05c064ba28d412a40f0b4')%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)) (paid $5, refunded $2 and $3), [one customer](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20payer%20%3D%20addr(0x4d0bb1b811810df38344602c0ff2bac8b9bee300)%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)) (4 purchases), [one save](https://rabdi.explorer.arkiv.network/tx/0x98b1294f8f9e761506dddd1f05df9347df63a7ba249a1fb28346013fd3f52361).
+- **Records are public.** Only the paying wallet's address goes on Arkiv, never an email or name, so a shop shouldn't put personal details in an order's description.
+
+Schema, friction, reach, why Arkiv and how we use it: [`arkiv/`](arkiv/).
 
 ## Setup
 Needs [Bun](https://bun.sh) 1.4 and, for the contract, [Foundry](https://getfoundry.sh).
