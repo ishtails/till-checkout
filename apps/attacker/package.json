@@ -1,0 +1,15 @@
+{
+  "name": "@till/attacker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun --env-file=../../.env src/index.ts"
+  },
+  "dependencies": {
+    "@x402/core": "2.28.0",
+    "@x402/evm": "2.28.0",
+    "@x402/hedera": "2.28.0",
+    "@x402/hono": "2.28.0",
+    "hono": "4.13.16"
+  }
+}
