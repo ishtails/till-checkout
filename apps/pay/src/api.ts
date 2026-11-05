@@ -30,6 +30,15 @@ export type CheckoutInfo = Order & {
   domain: { name: string; version: string; chainId: number; verifyingContract: Address }
 }
 
+export type RefundInfo = {
+  from: Address
+  to: Address
+  remainingAtomic: string
+  nonce: Hex
+  validBefore: number
+  domain: CheckoutInfo["domain"]
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(API + path, { ...init, headers: { "content-type": "application/json", ...init?.headers } })
   const body = await res.json()
@@ -42,6 +51,10 @@ export const api = {
   order: (id: string) => call<Order>(`/v1/orders/${id}`),
   pay: (id: string, body: { payer: Address; validAfter: number; validBefore: number; signature: Hex }) =>
     call<{ txHash: Hex }>(`/v1/checkout/${id}/pay`, { method: "POST", body: JSON.stringify(body) }),
+  orders: (merchant: string) => call<Order[]>(`/v1/orders?merchant=${merchant}`),
+  refundInfo: (id: string) => call<RefundInfo>(`/v1/orders/${id}/refund`),
+  refund: (id: string, body: { amount: string; validAfter: number; validBefore: number; signature: Hex }) =>
+    call<{ txHash: Hex }>(`/v1/orders/${id}/refund`, { method: "POST", body: JSON.stringify(body) }),
 }
 
 export const usdtBalance = async (address: Address, token: Address) => {

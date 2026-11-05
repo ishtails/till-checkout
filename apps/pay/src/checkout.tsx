@@ -4,7 +4,7 @@ import type { Address, Hex } from "viem"
 import { api, usdtBalance, type CheckoutInfo } from "./api"
 import { Card, Money } from "./ui"
 
-const receiveTypes = {
+export const receiveTypes = {
   ReceiveWithAuthorization: [
     { name: "from", type: "address" },
     { name: "to", type: "address" },
