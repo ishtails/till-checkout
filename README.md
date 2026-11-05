@@ -95,6 +95,18 @@ _(to do)_
 - Testnet only, one merchant in the demo.
 
 ## Decisions log
+Made before the hack:
+- **Gasless payments use EIP-3009 and our own relayer**, not a smart account and paymaster. Whitechain's USDT already accepts a signed transfer anyone can submit, and there's no hosted bundler or paymaster on Whitechain.
+- **One Whitechain service is both the relayer and the x402 facilitator.** People and agents both produce a signed USDT transfer, so one set of drain checks and one gas wallet cover both.
+- **x402 library: `@x402/*` v2, pinned at 2.28.0.** It already does the nonce, expiry, amount, recipient, balance and simulation checks, and every live facilitator speaks v2.
+- **We run our own Hedera facilitator, with x402.org as the fallback.** It's the same code with a second scheme, plus an expiry check and a replay cache. Switching to the fallback is one URL in config.
+- **Hedera payments settle in testnet USDC (`0.0.429274`)**, not HBAR, so prices read in dollars.
+- **One Whitechain contract, `Checkout`,** for on-chain receipts and refunds capped at what was paid. Agent x402 payments stay standard and go straight to the merchant, so any x402 agent can pay.
+- **Email wallet: Privy, on our hosted checkout page.** It works on chain 1874 and signs with no pop-up, and a hosted page keeps the merchant's side to about 20 lines.
+- **Storage: in memory, saved to one JSON file.** Orders fit in a file, and the chain and Hedera are the records anyone checks.
+- **Stack: a Bun monorepo** with a Hono server, a Vite + React app for checkout and dashboard, and a separate demo shop.
+
+During the hack:
 - **Ports:** server 3001, pay app 5173, shop 3002, agent 3003, attacker 3004.
 
 ## AI usage
