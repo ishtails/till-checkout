@@ -1,0 +1,16 @@
+{
+  "name": "@till/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --env-file=../../.env --watch src/index.ts",
+    "start": "bun --env-file=../../.env src/index.ts"
+  },
+  "dependencies": {
+    "hono": "4.13.16",
+    "viem": "2.57.16"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4"
+  }
+}
