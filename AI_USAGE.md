@@ -1,9 +1,38 @@
 # AI usage
 
-Kartik owns the idea, the design decisions and the outcomes. Claude Code (Anthropic) was his coding assistant and R&D tool.
+**How I worked.** I made each product and design decision and wrote it into the specs in [`design/`](design/). Claude Code (Anthropic), my coding assistant and R&D tool, wrote the code from those specs. I tested each piece live on testnet and reviewed every step before committing it, in small commits, as the history shows.
 
-- **Code:** Claude wrote code from Kartik's specs (in [`design/`](design/)). He reviewed each step and committed it in small pieces, as the history shows.
-- **R&D:** reading sponsor docs and SDKs, and small test scripts on Whitechain, Hedera and Arkiv testnet to check what works (the USDT signing domain, facilitator behaviour, fees, Arkiv reads).
-- **Testing:** contract tests (`contracts/test`) and live checks against testnet.
+## What I did
+- The product and the design calls (see the README's decisions log): what Till is, the two halves, the three chains and what each one is for, what's in and out of scope.
+- The specs in `design/`, which Claude worked from.
+- Wallets and funding: the testnet accounts on Whitechain, Hedera and Arkiv, faucets, and the Privy email wallets for the customer and the merchant.
+- Live testing: buying the report with an email wallet, signing in as the merchant, the one-click and partial refunds, and the agent runs.
+- Reviewing each change before it was committed.
 
-Claude also runs inside the product: the demo's AI agent (`apps/agent`) is Claude on the `claude` CLI, with only our wallet tools. The spending guard (`packages/guard`) is what stops it when a page tricks it.
+## What Claude Code did, by folder
+
+| Folder | What's in it | How it was made |
+|---|---|---|
+| `contracts/` | `Checkout.sol` (pay, refund capped at what was paid) and its Foundry tests | Claude wrote it from my spec; I reviewed it, and it's deployed and verified on Whitechain |
+| `apps/server/` | Orders API, relayer, x402 facilitator for Whitechain and Hedera, webhooks, Arkiv writer | Claude wrote it from my spec; I tested it live |
+| `apps/pay/` | Checkout, receipt, "Your receipts" and merchant dashboard pages | Claude wrote it; I tested every flow in the browser |
+| `apps/shop/` | The demo shop that uses only the SDK | Claude wrote it; the integration is the ~20 lines between the `Till` markers |
+| `apps/agent/` | The demo agent: Claude on the `claude` CLI, with a wallet tool server | Claude wrote it; I ran the attack and the real payment |
+| `apps/attacker/` | The review page and look-alike API for the demo attack | Claude wrote it from my attack design |
+| `packages/sdk`, `packages/guard`, `packages/receipts` | Merchant SDK, the agent's spending rules, the Arkiv receipt schema | Claude wrote them from my spec; the guard's limits are mine (`apps/agent/policy.json`) |
+| `README.md`, `arkiv/`, `WHITECHAIN_FEEDBACK.md` | Docs and sponsor files | Claude drafted them from what we built; I edited them in my own words |
+
+**R&D** (before and during the hack): Claude read the sponsors' docs and SDKs with me and ran small test scripts on testnet to check what works: the test USDT's signing domain, facilitator behaviour on expiry and retries, fees, and Arkiv writes and reads. What we learned is in the specs and the feedback files.
+
+**Prompts.** The specs in `design/` are what Claude worked from. The chat prompts weren't saved as files.
+
+## Reused, not written by us
+- Libraries: x402 v2 (`@x402/*`), Privy, viem, the Hiero (Hedera) SDK, the Arkiv SDK, the Model Context Protocol SDK, Hono, React, Vite, Tailwind CSS, zod, Foundry and forge-std.
+- The official test USDT on Whitechain, which we call but didn't write.
+
+## Assets
+- The demo video is recorded in my own voice. No AI voice and no text-to-speech.
+- _(Logo and cover: add how they were made once they exist.)_
+
+## Claude inside the product
+The demo's AI agent is Claude, run headless on the `claude` CLI with only our two wallet tools. The spending guard (`packages/guard`) sits below the model, in the wallet, and stops it when a page tricks it.
