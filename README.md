@@ -46,7 +46,7 @@ _(to do: diagram)_
 
 ## Whitechain
 - Checkout contract (verified): [`0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6`](https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6)
-- Customer's gasless USDT payment: [`0x93f3…6ab3`](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3) (first one, by script: 0.10 USDT, sent by our relayer; the customer holds no WBT)
+- Customer's gasless USDT payment: [`0x4646…7316`](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) ($5 from an email wallet on the checkout page, sent by our relayer; the customer holds no WBT). The first one, by script: [`0x93f3…6ab3`](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)
 - Refund linked to that order: _(to do)_
 - Agent's x402 payment through our facilitator: _(to do)_
 
