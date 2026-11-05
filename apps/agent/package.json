@@ -3,10 +3,14 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@hiero-ledger/sdk": "2.85.0",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@till/guard": "workspace:*",
     "@x402/core": "2.28.0",
     "@x402/evm": "2.28.0",
     "@x402/fetch": "2.28.0",
     "@x402/hedera": "2.28.0",
-    "viem": "2.57.16"
+    "viem": "2.57.16",
+    "zod": "4.6.7"
   }
 }

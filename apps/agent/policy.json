@@ -1,0 +1,12 @@
+{
+  "dailyBudgetUsd": 1.0,
+  "approvalAboveUsd": 1.0,
+  "merchants": [
+    {
+      "name": "Mumbai Rent Data",
+      "payTo": { "eip155:1874": "0x2A50c1fC157B10404A6BD4197B98c665684915D7", "hedera:testnet": "0.0.11155222" },
+      "maxPerCallUsd": 0.1,
+      "dailyCapUsd": 0.5
+    }
+  ]
+}
