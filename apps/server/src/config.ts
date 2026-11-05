@@ -20,6 +20,7 @@ export const config = {
   hederaFeePayerId: need("HEDERA_FEE_PAYER_ID"),
   hederaFeePayerKey: need("HEDERA_FEE_PAYER_KEY"),
   arkivKey: process.env.ARKIV_PRIVATE_KEY as Hex | undefined, // optional: no key, no Arkiv receipts
+  arkivAccessKey: process.env.ARKIV_ACCESS_KEY ?? "", // "" uses Arkiv's public RPC, which is rate limited
   merchantsFile: resolve(root, process.env.MERCHANTS_FILE ?? "merchants.json"),
   storeFile: resolve(root, process.env.STORE_FILE ?? "data/store.json"),
   orderTtlSeconds: 30 * 60,

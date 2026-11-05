@@ -50,8 +50,9 @@ pay.post("/v1/checkout/:id/pay", rateLimit, async c => {
     order.payer = payer
     order.paidTo = merchant.evmAddress
     order.payTx = hash
+    order.paidAt = Date.now()
     store.putOrder(order)
-    saveReceipt(order, { kind: "paid" })
+    saveReceipt(order, { kind: "paid", at: order.paidAt })
     void sendWebhook(merchant, { type: "order.paid", orderId: order.id, amount: order.amount, txHash: hash, ts: Date.now() })
     return c.json({ txHash: hash, explorer: explorerTx(hash) })
   } catch (err) {

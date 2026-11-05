@@ -73,7 +73,7 @@ refund.post("/v1/orders/:id/refund", rateLimit, async c => {
     order.refunds.push({ amount: amount.toString(), tx: hash, ts: Date.now() })
     if (order.refunded === order.amount) order.status = "refunded"
     store.putOrder(order)
-    saveReceipt(order, { kind: "refunded", amount: amount.toString(), tx: hash })
+    saveReceipt(order, { kind: "refunded", amount: amount.toString(), tx: hash, at: Date.now() })
     void sendWebhook(merchant, { type: "order.refunded", orderId: order.id, amount: amount.toString(), txHash: hash, ts: Date.now() })
     return c.json({ txHash: hash, explorer: explorerTx(hash) })
   } catch (err) {

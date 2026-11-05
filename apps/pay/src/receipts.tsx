@@ -1,6 +1,6 @@
 import { usePrivy, useWallets } from "@privy-io/react-auth"
 import { useEffect, useState } from "react"
-import { arkivExplorer, payerRecords, type ArkivReceipt } from "./arkiv"
+import { arkivExplorer, receipts, type ReceiptRecord } from "./arkiv"
 import { Card } from "./ui"
 
 // "Your receipts": everything one customer bought from any Till shop, read from Arkiv by their
@@ -10,11 +10,11 @@ export function Receipts({ address: given }: { address?: string }) {
   const { ready, authenticated, login } = usePrivy()
   const { wallets } = useWallets()
   const address = given ?? wallets.find(w => w.walletClientType === "privy")?.address
-  const [records, setRecords] = useState<ArkivReceipt[]>()
+  const [records, setRecords] = useState<ReceiptRecord[]>()
   const [error, setError] = useState<string>()
 
   useEffect(() => {
-    if (address) payerRecords(address).then(setRecords, e => setError(e.message))
+    if (address) receipts.payer(address).then(setRecords, e => setError(e.message))
   }, [address])
 
   if (!address) {
@@ -33,6 +33,7 @@ export function Receipts({ address: given }: { address?: string }) {
 
   // Records are oldest first, so the last one for an order is its current state.
   const orders = [...new Map(records.map(r => [r.orderId, r])).values()].reverse()
+  const paidAt = new Map(records.filter(r => r.event === "paid").map(r => [r.orderId, r.eventTime]))
   const paid = orders.reduce((a, r) => a + Number(r.amountUsd), 0)
   const refunded = orders.reduce((a, r) => a + Number(r.refundedUsd), 0)
   const shops = new Set(orders.map(r => r.merchant)).size
@@ -53,7 +54,7 @@ export function Receipts({ address: given }: { address?: string }) {
             <li key={r.orderId} className="flex items-center justify-between border-t border-stone-100 py-3">
               <div>
                 <a className="font-medium underline" href={`/receipt/${r.orderId}`}>{r.description}</a>
-                <p className="text-xs text-stone-500">{r.merchant}</p>
+                <p className="text-xs text-stone-500">{r.merchantName} · {new Date((paidAt.get(r.orderId) ?? r.eventTime) * 1000).toLocaleDateString()}</p>
               </div>
               <div className="text-right">
                 <p className="tabular-nums">${Number(r.amountUsd).toFixed(2)}</p>

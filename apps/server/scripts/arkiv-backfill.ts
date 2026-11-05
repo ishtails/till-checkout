@@ -6,11 +6,12 @@ import { store } from "../src/store"
 
 const orders = store.listOrders("data-shop").filter(o => o.status !== "open").reverse()
 for (const order of orders) {
-  saveReceipt({ ...order, refunded: "0" }, { kind: "paid" })
+  // Orders paid before paidAt was stored use the time the order was created, a minute or so earlier.
+  saveReceipt({ ...order, refunded: "0" }, { kind: "paid", at: order.paidAt ?? order.createdAt * 1000 })
   let refunded = 0n
   for (const r of order.refunds) {
     refunded += BigInt(r.amount)
-    saveReceipt({ ...order, refunded: refunded.toString() }, { kind: "refunded", amount: r.amount, tx: r.tx })
+    saveReceipt({ ...order, refunded: refunded.toString() }, { kind: "refunded", amount: r.amount, tx: r.tx, at: r.ts })
   }
 }
 await drained()

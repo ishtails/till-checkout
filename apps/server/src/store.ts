@@ -18,6 +18,7 @@ export type Order = {
   payer?: Address
   paidTo?: Address // the merchant wallet that was paid, which is the one that signs refunds
   payTx?: Hex
+  paidAt?: number // ms
   refunded: string // atomic
   refunds: { amount: string; tx: Hex; ts: number }[]
 }
