@@ -45,7 +45,7 @@ Merchants want agents as customers. People will only let an agent spend if its l
 _(to do: diagram)_
 
 ## Whitechain
-- Checkout contract (verified): _(to do)_
+- Checkout contract (verified): [`0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6`](https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6)
 - Customer's gasless USDT payment: _(to do)_
 - Refund linked to that order: _(to do)_
 - Agent's x402 payment through our facilitator: _(to do)_
