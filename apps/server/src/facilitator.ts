@@ -2,6 +2,18 @@ import { x402Facilitator } from "@x402/core/facilitator"
 import type { PaymentPayload, PaymentRequirements } from "@x402/core/types"
 import { toFacilitatorEvmSigner } from "@x402/evm"
 import { ExactEvmScheme } from "@x402/evm/exact/facilitator"
+import {
+  createHederaClient,
+  createHederaPreflightTransfer,
+  createHederaSignAndSubmitTransaction,
+  createHederaVerifyPayerSignature,
+  extractTransactionFromPayload,
+  HEDERA_TESTNET_USDC,
+  inspectHederaTransaction,
+  PrivateKey,
+  toFacilitatorHederaSigner,
+} from "@x402/hedera"
+import { ExactHederaScheme } from "@x402/hedera/exact/facilitator"
 import { Hono } from "hono"
 import type { Hex } from "viem"
 import { relayer, relayerClient } from "./chain"
@@ -15,17 +27,25 @@ import { store } from "./store"
 // Our checks below run first, in this order (design/04_low_level.md §1).
 
 const WHITECHAIN = "eip155:1874"
-const assets: Record<string, string> = { [WHITECHAIN]: config.usdt.toLowerCase() }
-const MIN_ATOMIC = 10_000n // $0.01
+const HEDERA = "hedera:testnet"
+const assets: Record<string, string> = { [WHITECHAIN]: config.usdt.toLowerCase(), [HEDERA]: HEDERA_TESTNET_USDC }
+const MIN_ATOMIC = 10_000n // $0.01 (both tokens have 6 decimals)
 const MAX_ATOMIC = 10_000_000n // $10
-const MAX_TIMEOUT_SECONDS = 300
+// A Hedera transaction dies 120 s after its valid start, whatever maxTimeoutSeconds says (spike, 24 Oct).
+const MAX_TIMEOUT_SECONDS: Record<string, number> = { [WHITECHAIN]: 300, [HEDERA]: 120 }
+const HEDERA_VALID_SECONDS = 120
+const HEDERA_MARGIN_SECONDS = 10 // leave time to submit
 
 type EvmAuthorization = { from: string; nonce: string; validBefore: string }
 
-/** The replay / idempotency key: (payer, nonce) for EVM. */
+const hederaTxId = (payload: PaymentPayload) =>
+  inspectHederaTransaction(extractTransactionFromPayload(payload.payload as never)).transactionId
+
+/** The replay / idempotency key: (payer, nonce) for EVM, the transaction ID for Hedera. */
 function settlementKey(payload: PaymentPayload) {
   const auth = (payload.payload as { authorization?: EvmAuthorization }).authorization
   if (auth) return `${payload.accepted.network}:${auth.from.toLowerCase()}:${auth.nonce.toLowerCase()}`
+  if (payload.accepted.network === HEDERA) return `${HEDERA}:${hederaTxId(payload)}`
   throw new Error("unsupported payload")
 }
 
@@ -40,10 +60,15 @@ function ourChecks({ paymentPayload, requirements: r }: { paymentPayload: Paymen
   const amount = BigInt(r.amount)
   if (amount < MIN_ATOMIC || amount > MAX_ATOMIC) reasons.push(`amount ${r.amount} outside $0.01–$10`)
   // 4. Short-lived authorizations.
+  const now = Math.floor(Date.now() / 1000)
+  const maxTimeout = MAX_TIMEOUT_SECONDS[r.network] ?? 0
+  if (r.maxTimeoutSeconds > maxTimeout) reasons.push(`maxTimeoutSeconds above ${maxTimeout}`)
   const auth = (paymentPayload.payload as { authorization?: EvmAuthorization }).authorization
-  if (r.maxTimeoutSeconds > MAX_TIMEOUT_SECONDS) reasons.push(`maxTimeoutSeconds above ${MAX_TIMEOUT_SECONDS}`)
-  if (auth && BigInt(auth.validBefore) > BigInt(Math.floor(Date.now() / 1000) + MAX_TIMEOUT_SECONDS)) {
-    reasons.push("authorization valid for too long")
+  if (auth && BigInt(auth.validBefore) > BigInt(now + maxTimeout)) reasons.push("authorization valid for too long")
+  // The library's Hedera verify passes an expired transaction, which then fails at settle.
+  if (r.network === HEDERA) {
+    const validStart = Number(hederaTxId(paymentPayload).split("@")[1])
+    if (validStart + HEDERA_VALID_SECONDS - HEDERA_MARGIN_SECONDS < now) reasons.push("transaction expired")
   }
   // 5. Drain caps, shared with the relayer.
   const cap = merchant && capReached(merchant.id)
@@ -53,8 +78,21 @@ function ourChecks({ paymentPayload, requirements: r }: { paymentPayload: Paymen
   return { merchant, reason: reasons.join("; ") || undefined }
 }
 
+// Hedera: our own fee payer account pays the network fee (about 0.014 HBAR per USDC payment).
+const hederaSigner = toFacilitatorHederaSigner({
+  getAddresses: () => [config.hederaFeePayerId],
+  signAndSubmitTransaction: createHederaSignAndSubmitTransaction(
+    network => createHederaClient(network),
+    PrivateKey.fromStringECDSA(config.hederaFeePayerKey),
+  ),
+  verifyPayerSignature: createHederaVerifyPayerSignature(),
+  preflightTransfer: createHederaPreflightTransfer(),
+})
+
 export const facilitator = new x402Facilitator()
   .register(WHITECHAIN, new ExactEvmScheme(toFacilitatorEvmSigner({ ...relayerClient, address: relayer.address } as never)))
+  // "reject": a payTo given as an EVM alias would make our fee payer fund a new account.
+  .register(HEDERA, new ExactHederaScheme(hederaSigner, { aliasPolicy: "reject" }))
   .onBeforeVerify(async ctx => {
     const { reason } = ourChecks(ctx)
     if (reason) return { abort: true, reason }

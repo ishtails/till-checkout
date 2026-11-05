@@ -17,6 +17,8 @@ export const config = {
   usdt: need("USDT_ADDRESS") as Address,
   checkout: need("CHECKOUT_CONTRACT") as Address,
   relayerKey: need("RELAYER_PRIVATE_KEY") as Hex,
+  hederaFeePayerId: need("HEDERA_FEE_PAYER_ID"),
+  hederaFeePayerKey: need("HEDERA_FEE_PAYER_KEY"),
   merchantsFile: resolve(root, process.env.MERCHANTS_FILE ?? "merchants.json"),
   storeFile: resolve(root, process.env.STORE_FILE ?? "data/store.json"),
   orderTtlSeconds: 30 * 60,
