@@ -31,6 +31,7 @@ export function publicOrder(order: Order) {
     refunded: usd(order.refunded),
     status: order.status,
     payer: order.payer,
+    paidTo: order.paidTo,
     payTx: order.payTx,
     refunds: order.refunds.map(r => ({ amount: usd(r.amount), tx: r.tx, ts: r.ts })),
     returnUrl: order.returnUrl,

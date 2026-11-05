@@ -12,6 +12,7 @@ export type Order = {
   refunded: string
   status: "open" | "paid" | "refunded"
   payer?: Address
+  paidTo?: Address
   payTx?: Hex
   refunds: { amount: string; tx: Hex; ts: number }[]
   returnUrl: string

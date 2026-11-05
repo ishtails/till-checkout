@@ -22,7 +22,8 @@ export function Dashboard() {
 
   const address = wallets.find(w => w.walletClientType === "privy")?.address as Address | undefined
 
-  const load = () => api.orders(merchantId).then(setOrders, e => setError(e.message))
+  // Checkouts that were opened but never paid aren't orders yet.
+  const load = () => api.orders(merchantId).then(all => setOrders(all.filter(o => o.status !== "open")), e => setError(e.message))
   useEffect(() => void load(), [merchantId])
   useEffect(() => {
     if (address) usdtBalance(address, USDT).then(setBalance)
@@ -117,19 +118,16 @@ export function Dashboard() {
                     <td className="px-4 py-3 font-mono text-xs">{o.payer ? short(o.payer) : "–"}</td>
                     <td className="px-4 py-3 text-right tabular-nums">${Number(o.amount).toFixed(2)}</td>
                     <td className="px-4 py-3">
-                      {o.status === "open" ? (
-                        <span className="text-stone-400">Not paid</span>
-                      ) : (
-                        <a className="text-emerald-700 underline" href={explorerTx(o.refunds.at(-1)?.tx ?? o.payTx!)} target="_blank" rel="noreferrer">
-                          {o.status === "refunded" ? "Refunded" : refunded > 0 ? "Partly refunded" : "Paid"} ↗
-                        </a>
-                      )}
+                      <a className="text-emerald-700 underline" href={explorerTx(o.refunds.at(-1)?.tx ?? o.payTx!)} target="_blank" rel="noreferrer">
+                        {o.status === "refunded" ? "Refunded" : refunded > 0 ? "Partly refunded" : "Paid"} ↗
+                      </a>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {o.status === "paid" && (
+                      {/* Only the wallet that was paid can sign the refund. */}
+                      {o.status === "paid" && address && o.paidTo?.toLowerCase() === address.toLowerCase() && (
                         <button
                           className="rounded-lg border border-stone-300 px-3 py-1 disabled:opacity-50"
-                          disabled={!address || busy !== undefined}
+                          disabled={busy !== undefined}
                           onClick={() => refund(o)}
                         >
                           {busy === o.id ? "Refunding…" : `Refund $${(Number(o.amount) - refunded).toFixed(2)}`}
