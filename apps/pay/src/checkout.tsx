@@ -2,7 +2,8 @@ import { usePrivy, useSignTypedData, useWallets } from "@privy-io/react-auth"
 import { useEffect, useState } from "react"
 import type { Address, Hex } from "viem"
 import { api, usdtBalance, type CheckoutInfo } from "./api"
-import { Card, Money } from "./ui"
+import { CheckCircleIcon, CoinsIcon, EnvelopeSimpleIcon, ReceiptIcon } from "@phosphor-icons/react"
+import { Badge, Button, Money, Muted, Shell } from "./ui"
 
 export const receiveTypes = {
   ReceiveWithAuthorization: [
@@ -43,8 +44,8 @@ export function Checkout({ id }: { id: string }) {
     api.faucet().then(setFaucet, () => setFaucet({ enabled: false }))
   }, [])
 
-  if (loadError) return <Card><p className="text-red-700">{loadError}</p></Card>
-  if (!info || !ready) return <Card><p className="text-stone-500">Loading…</p></Card>
+  if (loadError) return <Shell><p className="text-destructive">{loadError}</p></Shell>
+  if (!info || !ready) return <Shell><Muted>Loading…</Muted></Shell>
 
   const alreadyPaid = info.status !== "open"
   const short = balance !== undefined && balance < Number(info.amount)
@@ -91,58 +92,58 @@ export function Checkout({ id }: { id: string }) {
   }
 
   return (
-    <Card>
-      <p className="text-sm text-stone-500">{info.merchantName}</p>
-      <h1 className="mt-1 text-xl font-semibold">{info.description}</h1>
-      <Money usd={info.amount} className="mt-4 text-4xl" />
+    <Shell>
+      <Muted>{info.merchantName}</Muted>
+      <h1 className="mt-1 text-xl">{info.description}</h1>
+      <Money usd={info.amount} className="mt-5 text-5xl" />
+      <p className="mt-1 text-xs text-muted-foreground">USDT on Whitechain · no gas to pay</p>
 
       <div className="mt-8">
         {step.kind === "paid" || alreadyPaid ? (
-          <div className="space-y-4">
-            <p className="text-lg font-medium text-emerald-700">Paid ✓</p>
-            <div className="flex gap-3">
-              <a className="rounded-lg border border-stone-300 px-4 py-2" href={`/receipt/${id}`}>
+          <div className="space-y-5">
+            <Badge variant="paid" className="h-8 px-3 text-sm">
+              <CheckCircleIcon weight="fill" />
+              Paid
+            </Badge>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={() => (location.href = `/receipt/${id}`)}>
+                <ReceiptIcon />
                 View receipt
-              </a>
-              <a className="rounded-lg bg-stone-900 px-4 py-2 text-white" href={info.returnUrl + `?order=${id}`}>
-                Back to {info.merchantName}
-              </a>
+              </Button>
+              <Button onClick={() => (location.href = info.returnUrl + `?order=${id}`)}>Back to {info.merchantName}</Button>
             </div>
           </div>
         ) : !authenticated ? (
-          <button className="w-full rounded-lg bg-stone-900 py-3 text-white" onClick={login}>
-            Continue with email
-          </button>
+          <div className="space-y-3">
+            <Button size="lg" className="w-full" onClick={login}>
+              <EnvelopeSimpleIcon />
+              Continue with email
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">No wallet app, no seed phrase. Your email is enough.</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-stone-600">
-              Signed in as {user?.email?.address}
-              {balance !== undefined && <> · Balance {balance.toFixed(2)} USDT</>}
-            </p>
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-muted px-3 py-2.5 text-sm">
+              <span className="truncate text-muted-foreground">{user?.email?.address ?? user?.google?.email}</span>
+              {balance !== undefined && <span className="shrink-0 font-medium tabular-nums">{balance.toFixed(2)} USDT</span>}
+            </div>
             {short && faucet?.enabled && drip.kind !== "sent" && (
-              <div className="rounded-lg border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700">
-                <p>This is a testnet demo. Your new wallet has no test USDT yet.</p>
-                <button
-                  className="mt-2 rounded-lg border border-stone-300 bg-white px-3 py-1.5 disabled:opacity-50"
-                  disabled={!address || drip.kind === "sending"}
-                  onClick={getTestUsdt}
-                >
+              <div className="rounded-lg bg-secondary p-4 text-sm text-secondary-foreground">
+                <p>This is a testnet demo, and your new wallet has no test USDT yet.</p>
+                <Button variant="outline" size="sm" className="mt-3" isLoading={drip.kind === "sending"} disabled={!address} onClick={getTestUsdt}>
+                  {drip.kind !== "sending" && <CoinsIcon />}
                   {drip.kind === "sending" ? "Sending…" : `Get ${faucet.drip} test USDT`}
-                </button>
-                {drip.kind === "error" && <p className="mt-2 text-red-700">{drip.message}</p>}
+                </Button>
+                {drip.kind === "error" && <p className="mt-2 text-destructive">{drip.message}</p>}
               </div>
             )}
-            <button
-              className="w-full rounded-lg bg-emerald-700 py-3 text-lg text-white disabled:opacity-50"
-              disabled={!address || step.kind === "paying" || short}
-              onClick={pay}
-            >
+            <Button variant="brand" size="lg" className="w-full" isLoading={step.kind === "paying"} disabled={!address || short} onClick={pay}>
               {step.kind === "paying" ? "Paying…" : `Pay $${Number(info.amount).toFixed(2)}`}
-            </button>
-            {step.kind === "error" && <p className="text-sm text-red-700">{step.message}</p>}
+            </Button>
+            {step.kind === "error" && <p className="text-sm text-destructive">{step.message}</p>}
           </div>
         )}
       </div>
-    </Card>
+    </Shell>
   )
 }

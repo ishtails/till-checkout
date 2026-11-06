@@ -1,24 +1,31 @@
+import { ArrowCounterClockwiseIcon, CheckCircleIcon, DatabaseIcon } from "@phosphor-icons/react"
 import { useEffect, useState } from "react"
 import { api, explorerTx, type Order } from "./api"
 import { arkivExplorer, receipts, type ReceiptRecord } from "./arkiv"
-import { Card, Money } from "./ui"
+import { Badge, Money, Muted, RecordLink, Shell } from "./ui"
 
 const when = (ts: number) => new Date(ts > 1e12 ? ts : ts * 1000).toLocaleString()
 
 type Line = { label: string; usd: string; tx: string; ts?: number }
 
 function Row({ label, usd, tx, ts }: Line) {
+  const isRefund = label === "Refund"
   return (
-    <li className="flex items-center justify-between border-t border-stone-100 py-3">
-      <div>
-        <p className="font-medium">{label}</p>
-        {ts && <p className="text-xs text-stone-500">{when(ts)}</p>}
+    <li className="flex items-center justify-between gap-3 border-t py-3.5">
+      <div className="flex items-center gap-3">
+        <span className={`flex size-8 items-center justify-center rounded-full ${isRefund ? "bg-warning/20 text-warning-foreground" : "bg-secondary text-secondary-foreground"}`}>
+          {isRefund ? <ArrowCounterClockwiseIcon className="size-4" weight="bold" /> : <CheckCircleIcon className="size-4" weight="fill" />}
+        </span>
+        <div>
+          <p className="text-sm font-medium">{label}</p>
+          {ts && <p className="text-xs text-muted-foreground">{when(ts)}</p>}
+        </div>
       </div>
       <div className="text-right">
-        <p className="tabular-nums">${Number(usd).toFixed(2)}</p>
-        <a className="text-xs text-emerald-700 underline" href={explorerTx(tx)} target="_blank" rel="noreferrer">
-          On-chain record ↗
-        </a>
+        <p className="text-sm font-medium tabular-nums">
+          {isRefund ? "−" : ""}${Number(usd).toFixed(2)}
+        </p>
+        <RecordLink href={explorerTx(tx)}>On-chain record</RecordLink>
       </div>
     </li>
   )
@@ -60,8 +67,8 @@ export function Receipt({ id }: { id: string }) {
 
   const latest = records?.at(-1)
   if (!order && !latest) {
-    if (serverDown && records) return <Card><p className="text-red-700">No receipt found for this order.</p></Card>
-    return <Card><p className="text-stone-500">Loading…</p></Card>
+    if (serverDown && records) return <Shell><p className="text-destructive">No receipt found for this order.</p></Shell>
+    return <Shell><Muted>Loading…</Muted></Shell>
   }
 
   const onArkiv = !!records?.length
@@ -84,11 +91,15 @@ export function Receipt({ id }: { id: string }) {
   const count = records?.length ?? 0
 
   return (
-    <Card>
-      <p className="text-sm text-stone-500">Receipt · {latest?.merchantName ?? order!.merchant}</p>
-      <h1 className="mt-1 text-xl font-semibold">{latest?.description ?? order!.description}</h1>
-      <Money usd={amount} className="mt-4 text-4xl" />
-      <p className={`mt-1 text-sm font-medium ${refunded > 0 ? "text-amber-700" : "text-emerald-700"}`}>{status}</p>
+    <Shell>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <Muted>Receipt · {latest?.merchantName ?? order!.merchant}</Muted>
+          <h1 className="mt-1 text-xl">{latest?.description ?? order!.description}</h1>
+        </div>
+        <Badge variant={unpaid ? "neutral" : refunded > 0 ? "refunded" : "paid"}>{status}</Badge>
+      </div>
+      <Money usd={amount} className="mt-5 text-5xl" />
 
       <ul className="mt-6">
         {lines.map(l => (
@@ -97,26 +108,25 @@ export function Receipt({ id }: { id: string }) {
       </ul>
 
       {!unpaid && (
-        <p className="mt-6 text-xs text-stone-500">
+        <div className="mt-5 flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground">
+          <DatabaseIcon className="size-4 shrink-0" />
           {onArkiv ? (
-            <>
+            <span>
               Read from Arkiv, {count} {count === 1 ? "record" : "records"}
               {order && count < expected && ", saving the latest…"} ·{" "}
-              <a className="text-emerald-700 underline" href={arkivExplorer("order_id", id)} target="_blank" rel="noreferrer">
-                On Arkiv ↗
-              </a>
-            </>
+              <RecordLink href={arkivExplorer("order_id", id)}>On Arkiv</RecordLink>
+            </span>
           ) : (
-            "Saving this receipt to Arkiv…"
+            <span>Saving this receipt to Arkiv…</span>
           )}
-        </p>
+        </div>
       )}
       {payer && (
-        <p className="mt-1 text-xs">
-          <a className="text-stone-500 underline" href={`/receipts/${payer}`}>All your receipts</a>
-        </p>
+        <a className="mt-4 inline-block text-sm font-medium hover:underline" href={`/receipts/${payer}`}>
+          All your receipts →
+        </a>
       )}
-      <p className="mt-6 break-all text-xs text-stone-400">Order {id}</p>
-    </Card>
+      <p className="mt-6 break-all font-mono text-[11px] text-muted-foreground/70">Order {id}</p>
+    </Shell>
   )
 }
