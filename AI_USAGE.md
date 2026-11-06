@@ -15,7 +15,7 @@
 |---|---|---|
 | `contracts/` | `Checkout.sol` (pay, refund capped at what was paid) and its Foundry tests | Claude wrote it from my spec; I reviewed it, and it's deployed and verified on Whitechain |
 | `apps/server/` | Orders API, relayer, x402 facilitator for Whitechain and Hedera, webhooks, Arkiv writer | Claude wrote it from my spec; I tested it live |
-| `apps/pay/` | Landing page, docs page, checkout, receipt, "Your receipts", merchant dashboard and agent console | Claude wrote it; I tested every flow in the browser, including approving the agent's payments on the console |
+| `apps/pay/` | Landing page, docs page, checkout, receipt, the customer's account, the merchant dashboard and the agent console, each opening only for its own wallet | Claude wrote it; I tested every flow in the browser, including approving the agent's payments on the console |
 | `apps/shop/` | The demo shop that uses only the SDK | Claude wrote it; the integration is the ~20 lines between the `Till` markers |
 | `apps/agent/` | The demo agent: Claude on the `claude` CLI, with a wallet tool server, and the ERC-8004 registration script | Claude wrote it; I ran the attack, the real payment and the approval |
 | `apps/attacker/` | The review page and look-alike API for the demo attack | Claude wrote it from my attack design |
