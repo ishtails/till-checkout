@@ -16,6 +16,7 @@ const SECTIONS = [
   ["webhooks", "Webhooks"],
   ["paywall", "Agent paywall (x402)"],
   ["guard", "The spending guard"],
+  ["identity", "Agent identity"],
   ["refunds", "Refunds"],
   ["arkiv", "Arkiv: receipts and registry"],
   ["http", "HTTP endpoints"],
@@ -101,6 +102,19 @@ guard(x402Client, {
   registry: async req => registryView(await lookupMerchants(), req, seller),
   onDecision: d => logDecision("research-agent", d), // every payment and block, to HCS
 })`
+
+const identityCode = `// The agent names its ERC-8004 entry in each x402 payment
+client.registerExtension({
+  key: "erc8004",
+  enrichPaymentPayload: async p => ({
+    ...p,
+    extensions: { ...p.extensions, erc8004: { registry: "eip155:296:0x8004A818…BD9e", agentId: "154" } },
+  }),
+})
+
+// Till, after settling: does the registry say the payer is that agent's wallet?
+import { verifyPayer } from "@till/identity"
+const agent = await verifyPayer(claim, network, payer) // { agentId, owner, wallet, hcsTopic } or undefined`
 
 const policy = `{
   "dailyBudgetUsd": 2.0,
@@ -262,6 +276,30 @@ export function Docs() {
               <CodeWindow code={policy} filename="policy.json" />
               <p>
                 <b>The log.</b> Every decision (<code>agent.paid</code>, <code>agent.blocked</code>, <code>agent.approval_requested</code>, <code>agent.approved</code>, <code>agent.denied</code>) goes to a Hedera Consensus Service topic that only the agent's key can write to. Each message has the amount, payee, reasons, the Arkiv entity it was checked against and, once paid, the transaction. The console reads it back from Hedera's mirror node.
+              </p>
+            </Doc>
+
+            <Doc id="identity" title="Agent identity (ERC-8004)">
+              <p>
+                The guard protects the agent's owner from bad sellers. Identity works the other way: it tells a shop which agent paid it, and who owns that agent.
+              </p>
+              <p>
+                An agent registers in the <b>ERC-8004 Identity Registry</b> already deployed on Hedera testnet (<code>0x8004A818BFB912233c491871b3d84c89A494BD9e</code>). The entry is an NFT held by the owner. It records the wallet the agent pays from, which that wallet has to sign itself, so no one can claim someone else's wallet. It can also record metadata: Till stores the agent's HCS log topic and its Hedera account.
+              </p>
+              <p>
+                The agent sends its ID in each x402 payment's <code>extensions</code>. The claim isn't signed, so after the payment settles Till checks it against the registry: on Whitechain the payer must be the registered wallet, and on Hedera it must be the registered account. A match is shown on the merchant's dashboard as "Verified agent #N · owner 0x…". The agent console reads the same entry and checks that the log it shows is the one the owner registered.
+              </p>
+              <CodeWindow code={identityCode} filename="identity.ts" />
+              <p>
+                Register an agent with{" "}
+                <RecordLink className="text-sm" href={src("apps/agent/scripts/identity-register.ts")}>
+                  apps/agent/scripts/identity-register.ts
+                </RecordLink>
+                . Till's research agent is{" "}
+                <RecordLink className="text-sm" href="https://hashscan.io/testnet/contract/0x8004A818BFB912233c491871b3d84c89A494BD9e">
+                  agent #154
+                </RecordLink>
+                .
               </p>
             </Doc>
 
