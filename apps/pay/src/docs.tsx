@@ -99,6 +99,8 @@ guard(x402Client, {
   policy,                                   // policy.json: budget, auto-pay limit, merchants
   stateFile: "data/agent-state.json",       // today's totals
   approver,                                 // asks the owner above the auto-pay limit
+  agent: "research-agent",
+  owners: ["0x…"],                          // only these wallets' signed answers count
   registry: async req => registryView(await lookupMerchants(), req, seller),
   onDecision: d => logDecision("research-agent", d), // every payment and block, to HCS
 })`
@@ -271,7 +273,7 @@ export function Docs() {
                 <li>Today's total stays within the daily budget.</li>
               </ol>
               <p>
-                <b>Approvals.</b> A payment that passes every rule but is above <code>approvalAboveUsd</code> pauses. The agent files it with Till, and the owner approves or denies it on the <a className="text-brand hover:underline" href="/agent">agent console</a>, signing with their wallet. Nothing is signed until they say yes. A broken rule can never be approved.
+                <b>Approvals.</b> A payment that passes every rule but is above <code>approvalAboveUsd</code> pauses. The agent files it with Till, and the owner approves or denies it on the <a className="text-brand hover:underline" href="/agent">agent console</a>, signing with their wallet. Till only carries the answer: the guard picks the request's ID itself and checks the signature against its own list of owners, so Till can't approve on the owner's behalf, and an old answer can't be reused. Nothing is signed until an owner says yes. A broken rule can never be approved.
               </p>
               <CodeWindow code={policy} filename="policy.json" />
               <p>
