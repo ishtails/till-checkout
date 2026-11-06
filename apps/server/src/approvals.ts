@@ -3,17 +3,16 @@ import { Hono } from "hono"
 import { isAddress, verifyMessage, type Hex } from "viem"
 import { config } from "./config"
 import type { Policy } from "@till/guard"
+import { decisionMessage, isApprovalId, newApprovalId } from "@till/guard/approvals"
 import { applyLimits, limitsMessage, limitsProblem, type Limits } from "@till/guard/limits"
 import { store, type Approval } from "./store"
 
 // Human approval for the agent: when its guard pauses a payment (allowed, but above the auto-pay
-// limit), the agent files it here and waits. The owner answers from the console by signing the
-// decision with their wallet, so no one else can approve, and the signature is kept as proof.
+// limit), the agent files it here under an ID it picked, and waits. The owner answers from the
+// console by signing the decision with their wallet. Till only carries the answer: the agent's
+// guard checks the signature itself, so Till can't approve anything on the owner's behalf.
 const AGENT = "research-agent"
 const EXPIRES_MS = 5 * 60_000
-
-export const decisionMessage = (a: Approval, decision: "approve" | "deny") =>
-  `${decision === "approve" ? "Approve" : "Deny"} agent payment ${a.id}\n$${a.usd} to ${a.merchant ?? a.payTo}\nAgent: ${a.agent}`
 
 // A request nobody answered in time is expired, and the agent gives up on it.
 const fresh = (a: Approval): Approval =>
@@ -63,10 +62,12 @@ approvals.get("/v1/approvals/:id", c => {
 // Filed by the agent, with its token.
 approvals.post("/v1/approvals", async c => {
   if (!config.agentToken || c.req.header("authorization") !== `Bearer ${config.agentToken}`) return c.json({ error: "unauthorized" }, 401)
-  const b = await c.req.json<Partial<Approval>>()
+  const b = await c.req.json<Partial<Approval> & { approvalId?: string }>()
   if (!b.usd || !b.amount || !b.network || !b.payTo) return c.json({ error: "usd, amount, network and payTo are required" }, 400)
+  if (b.approvalId !== undefined && !isApprovalId(b.approvalId)) return c.json({ error: "approvalId must be 32 hex characters" }, 400)
+  if (b.approvalId && store.getApproval(b.approvalId)) return c.json({ error: "that approvalId is already used" }, 409)
   const a: Approval = {
-    id: crypto.randomUUID().slice(0, 8),
+    id: b.approvalId ?? newApprovalId(),
     agent: AGENT,
     usd: b.usd,
     amount: b.amount,

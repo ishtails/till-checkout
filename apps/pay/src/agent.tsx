@@ -3,6 +3,7 @@ import { CheckCircleIcon, HandPalmIcon, PauseCircleIcon, ProhibitIcon, RobotIcon
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { Address, Hex } from "viem"
+import { decisionMessage } from "@till/guard/approvals"
 import { limitsMessage, limitsOf, limitsProblem, type Limits } from "@till/guard/limits"
 import { api, type AgentInfo, type Approval } from "./api"
 import { Input } from "./components/ui/input"
@@ -178,8 +179,8 @@ export function AgentConsole() {
     if (!address) return
     setBusy(a.id + decision)
     try {
-      // The server rebuilds this exact text and checks it was signed by the owner's wallet.
-      const message = `${decision === "approve" ? "Approve" : "Deny"} agent payment ${a.id}\n$${a.usd} to ${a.merchant ?? a.payTo}\nAgent: ${a.agent}`
+      // The agent's guard rebuilds this exact text and checks it was signed by an owner's wallet.
+      const message = decisionMessage(a, decision)
       const { signature } = await signMessage({ message }, { address, uiOptions: { showWalletUIs: false } })
       await api.decide(a.id, { decision, address, signature: signature as Hex })
       toast.success(decision === "approve" ? `Approved ${money(a.usd)}. Your agent is paying now.` : "Denied. Nothing was paid.")
