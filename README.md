@@ -9,7 +9,7 @@
 
 <p align="center">
   A checkout for small online sellers: people pay in USDT with an email and no gas, agents pay per API call with no sign-up, and refunds take one click.<br>
-  A spending guard for whoever runs the agent: its limits are checked before anything is signed, and every payment and blocked attempt is a public record.
+  A spending guard for the agent's owner: its limits are checked before anything is signed, and every payment and blocked attempt is a public record.
 </p>
 
 <p align="center">
@@ -20,11 +20,12 @@
 
 AI agents are starting to pay for things: one API call, one dataset, five cents at a time. Shops want them as customers, and a card can't charge five cents with no account. But people will only let an agent spend if its limits hold.
 
-Before the event I tested that. I gave Claude Haiku, Sonnet and Opus a task and a review page whose link pointed to a look-alike of the real API, asking ten times the price, paid to a stranger. **The link fooled every model, every time** (9 of 9). Injected instructions didn't work at all (0 of 18), but a poisoned link has nothing on the page to give it away: only the payment request shows the real price and payee. So the limit has to live in the wallet, not the model.
+Before the event I tested that. I gave Claude Haiku, Sonnet and Opus a task and a review page. Its link pointed to a look-alike of the real API, asking ten times the price, paid to a stranger. **The link fooled every model, every time** (9 of 9). Instructions planted on the page didn't work at all (0 of 18). A poisoned link does, because nothing on the page gives it away: only the payment request shows the real price and payee. So the limit has to live in the wallet, not the model.
 
 Till is both halves: a checkout a shop adds in about 20 lines, and a guard in the agent's wallet. Something wrong is blocked outright. Something only unusual, like a bigger payment than normal, waits for the owner's OK on their phone.
 
-**Try it:** open the [demo shop](https://shop.till.ishtails.xyz), sign in with any email, get free test USDT, and buy the report ($0.10; prices are lowered for testnet). Your receipt is read from Arkiv. The agent runs on my laptop; its log is public on [HashScan](https://hashscan.io/testnet/topic/0.0.11155231).
+## Try it
+Open the [demo shop](https://shop.till.ishtails.xyz), sign in with any email, get free test USDT, and buy the report ($0.10; prices are lowered for testnet). Your receipt is read from Arkiv. The agent runs on my laptop; its log is public on [HashScan](https://hashscan.io/testnet/topic/0.0.11155231).
 
 ## The demo
 1. **A person pays.** Brickline, a demo data shop, adds Till in about 20 lines. A customer buys a $0.10 report with an email and a code. No wallet app, no gas.
@@ -99,7 +100,7 @@ The full reference, including Sign in with Till and webhooks, is at [till.ishtai
 
 **Why this needs on-chain stablecoin settlement on Whitechain.** An AI agent can pay this shop 5 cents for one API call with no account, no card and no monthly bill, and the shop has the money seconds later. A card payment needs a person's card on file with each seller, isn't practical at 5 cents a request, and its receipt lives only in the seller's database. Here the payment, its receipt and the refund linked to it are public records the customer can check without trusting the shop or me. Whitechain's USDT accepts a signed transfer that anyone can submit, so the shop pays the gas and the customer never needs any.
 
-**How the business pays for gas.** From a gas tank it prepays in USDT. Each transaction the relayer sends for that shop is charged at its real fee, read from the receipt on chain and priced in dollars, plus 10%, which is how Till earns. New merchants start with $5 of credit; topping up is a USDT transfer the merchant signs, so it costs no gas either. A checkout payment is about 183k gas, about 0.0009 WBT ([measured](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)). On 6 Nov the demo shop had spent $0.87 across 23 transactions, with $4.13 left.
+**How the business pays for gas.** From a gas tank it prepays in USDT, charged at each transaction's real fee plus 10%, which is how Till earns. New merchants start with $5 of credit, and topping up is gasless. A checkout payment costs about 0.0009 WBT ([measured](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)).
 
 **Where the relayer's WBT comes from.** On testnet, the faucet: 0.5 WBT a day, about 500 payments. In production Till would buy WBT with the tanks' USDT; that swap isn't built.
 
@@ -113,11 +114,11 @@ The full reference, including Sign in with Till and webhooks, is at [till.ishtai
 7. It holds at most about 0.3 WBT.
 
 ## Hedera
-**In short:** an x402 endpoint that settles in USDC on Hedera through my own facilitator, an agent that pays on its own inside limits it can't be talked out of, human approval above an amount, a public HCS log of every payment, approval and block, and the agent's identity on ERC-8004.
+**In short:** an agent that pays on its own over x402, inside limits it can't be talked out of, with every payment, approval and block on a public HCS log. It settles in USDC through Till's own facilitator, and its identity is on ERC-8004.
 
 - x402 endpoint: `GET /api/data` on the demo shop. Its 402 offers USDT on Whitechain and USDC on Hedera.
 - A settled payment: [`0.0.11155223@1793960375.693637515`](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515) ($0.05 to the merchant `0.0.11155222`; the fee payer `0.0.11155223` paid the 0.016 HBAR fee, the agent paid none)
-- Facilitator: mine (`apps/server`). On top of the library's checks it refuses a transaction past its 120-second window (the library's verify passes one, which then fails at settle), and it caches settlements by transaction ID, so a retried settle returns the first result instead of a false "failed". Fallback: x402.org, one line of config
+- Facilitator: Till's own (`apps/server`). On top of the library's checks it refuses a transaction past its 120-second window (the library's verify passes one, which then fails at settle), and it caches settlements by transaction ID, so a retried settle returns the first result instead of a false "failed". Fallback: x402.org, one line of config
 - Spending log (HCS topic): [`0.0.11155231`](https://hashscan.io/testnet/topic/0.0.11155231)
 
 **The spending guard** runs inside the agent's payment tool, below the model, so a blocked payment is never signed ([`packages/guard`](packages/guard)). The demo agent's rules:
@@ -215,10 +216,10 @@ It needs the `claude` CLI, logged in, and `AGENT_OWNER` set to the owner's walle
 - Testnet only, one merchant in the demo.
 
 ## Decisions log
-- **Gasless payments use EIP-3009 and my own relayer**, not a smart account and paymaster. Whitechain's USDT already accepts a signed transfer anyone can submit, and there's no hosted bundler or paymaster on Whitechain.
+- **Gasless payments use EIP-3009 and Till's own relayer**, not a smart account and paymaster. Whitechain's USDT already accepts a signed transfer anyone can submit, and there's no hosted bundler or paymaster on Whitechain.
 - **One Whitechain service is both the relayer and the x402 facilitator.** People and agents both produce a signed USDT transfer, so one set of drain checks and one gas wallet cover both.
 - **x402 library: `@x402/*` v2, pinned at 2.28.0.** It already does the nonce, expiry, amount, recipient, balance and simulation checks, and every live facilitator speaks v2.
-- **My own Hedera facilitator, with x402.org as the fallback.** Same code with a second scheme, plus an expiry check and a replay cache. Switching is one URL in config.
+- **Till runs its own Hedera facilitator, with x402.org as the fallback.** Same code with a second scheme, plus an expiry check and a replay cache. Switching is one URL in config.
 - **Hedera payments settle in testnet USDC (`0.0.429274`)**, not HBAR, so prices read in dollars.
 - **One Whitechain contract, `Checkout`,** for on-chain receipts and refunds capped at what was paid. Agent x402 payments stay standard and go straight to the merchant, so any x402 agent can pay.
 - **Email wallet: Privy, on a hosted checkout page.** It works on chain 1874 and signs with no pop-up, and a hosted page keeps the merchant's side to about 20 lines.
