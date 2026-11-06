@@ -306,17 +306,45 @@ export function Docs() {
                   ["POST /v1/approvals, POST /v1/approvals/:id", "The agent files a request (with its token); the owner answers (with a wallet signature)."],
                   ["GET /v1/registry", "Each merchant's Arkiv entity and explorer link."],
                   ["GET /v1/gas?merchant=, GET /v1/relayer", "Gas the relayer spent for a merchant, and the relayer's balance."],
+                  ["GET /v1/gas-tank?merchant=, POST /v1/gas-tank/topup", "A merchant's gas tank, and a signed USDT top-up."],
                   ["/facilitator/supported, /verify, /settle", "The x402 facilitator."],
                 ]}
               />
             </Doc>
 
             <Doc id="gas" title="Gas tank">
-              <p>Coming soon.</p>
+              <p>
+                Till's relayer pays the gas on Whitechain, so your customers and agents never need WBT. You prepay for it in USDT from the dashboard, with a
+                signed transfer like every other payment, so topping up costs you no gas either.
+              </p>
+              <p>
+                Each transaction is charged at its real fee, read from its receipt and priced at WBT's market rate, <b>plus 10%</b>. New merchants start with{" "}
+                <b>$5 of credit</b>, about a hundred transactions. When the tank runs dry, Till stops paying gas for your payments until you top up, and the
+                customer sees a clear message instead of a stuck payment.
+              </p>
+              <Table
+                head={["Endpoint", "What it's for"]}
+                rows={[
+                  ["GET /v1/gas-tank?merchant=", "Balance, transactions left, cost per transaction, top-ups, and what to sign for the next one."],
+                  ["POST /v1/gas-tank/topup", "{ merchant, from, amount, nonce, validBefore, signature }: a USDT TransferWithAuthorization to Till's gas wallet."],
+                ]}
+              />
             </Doc>
 
             <Doc id="money" title="How Till makes money">
-              <p>Coming soon.</p>
+              <ol className="list-decimal space-y-2 pl-5">
+                <li>
+                  <b>Gas at cost plus 10%</b>, through the gas tank. This one is built: it's in the dashboard today.
+                </li>
+                <li>
+                  <b>A small fee per payment</b>, around 0.5%, taken by the Checkout contract when it settles. Not built yet; it's one split in the contract
+                  that already handles payments and refunds.
+                </li>
+                <li>
+                  <b>Paid tiers for agent owners</b>, later: a hosted guard, team approvals, longer history.
+                </li>
+              </ol>
+              <p>Everything here is open source, and a merchant can run their own server and relayer and pay nothing.</p>
             </Doc>
           </div>
         </main>
