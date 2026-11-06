@@ -1,0 +1,13 @@
+[Unit]
+Description=Till checkout server, relayer and x402 facilitator
+After=network-online.target
+
+[Service]
+User=till
+WorkingDirectory=/home/till/till/apps/server
+ExecStart=/home/till/.bun/bin/bun run start
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Till demo shop
+After=till-server.service
+
+[Service]
+User=till
+WorkingDirectory=/home/till/till/apps/shop
+ExecStart=/home/till/.bun/bin/bun run start
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
