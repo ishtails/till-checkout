@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test"
-import { check, record, registryView, type Policy, type RegistryEntry, type Spent } from "./index"
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts"
+import { decisionMessage } from "./approvals"
+import { approvalProblem, check, record, registryView, type Policy, type RegistryEntry, type Spent } from "./index"
 
 const SHOP_EVM = "0x2A50c1fC157B10404A6BD4197B98c665684915D7"
 const SHOP_HEDERA = "0.0.11155222"
@@ -113,5 +115,85 @@ describe("registry on Arkiv", () => {
 
   test("Arkiv unreachable is a hard block", () => {
     expect(check(policy, none, hedera("50000"), { error: "timeout" }).reasons).toEqual(["couldn't check the payee on Arkiv: timeout"])
+  })
+})
+
+describe("approvals", () => {
+  const owner = privateKeyToAccount(generatePrivateKey())
+  const stranger = privateKeyToAccount(generatePrivateKey())
+  const owners = [owner.address.toLowerCase()]
+  const subject = { id: "a".repeat(32), usd: "0.25", merchant: "Brickline", payTo: SHOP_HEDERA, agent: "research-agent" }
+  const signed = (who = owner, s = subject) => who.signMessage({ message: decisionMessage(s, "approve") })
+
+  test("the owner's signature for this request counts", async () => {
+    expect(await approvalProblem(subject, { by: owner.address, signature: await signed() }, owners)).toBeUndefined()
+  })
+
+  test("an approval with no signature, as a server alone could give, doesn't count", async () => {
+    expect(await approvalProblem(subject, { by: owner.address }, owners)).toBe("the approval has no signature")
+  })
+
+  test("a stranger's approval doesn't count, under their address or the owner's", async () => {
+    expect(await approvalProblem(subject, { by: stranger.address, signature: await signed(stranger) }, owners)).toContain("not the agent's owner")
+    expect(await approvalProblem(subject, { by: owner.address, signature: await signed(stranger) }, owners)).toContain("isn't")
+  })
+
+  test("the owner's approval of another request, or another amount, doesn't count", async () => {
+    const other = await signed(owner, { ...subject, id: "b".repeat(32) })
+    expect(await approvalProblem(subject, { by: owner.address, signature: other }, owners)).toContain("isn't")
+    const cheaper = await signed(owner, { ...subject, usd: "0.05" })
+    expect(await approvalProblem(subject, { by: owner.address, signature: cheaper }, owners)).toContain("isn't")
+  })
+})
+
+describe("guard, above the auto-pay limit", () => {
+  const owner = privateKeyToAccount(generatePrivateKey())
+  const live: Policy = { ...policy, dailyBudgetUsd: 2, approvalAboveUsd: 0.1, merchants: [{ ...policy.merchants[0], maxPerCallUsd: 0.3, dailyCapUsd: 1 }] }
+  const stateFile = `${require("node:os").tmpdir()}/till-guard-test-${Date.now()}.json`
+
+  // A stand-in for the x402 client: keeps the hook the guard registers, so the test can call it.
+  async function attempt(approver: import("./index").Approver) {
+    let hook: ((ctx: unknown) => Promise<unknown>) | undefined
+    const client = { onBeforePaymentCreation: (f: typeof hook) => (hook = f), onPaymentResponse: () => {} }
+    const { guard } = await import("./index")
+    const decisions: string[] = []
+    guard(client as never, { policy: live, stateFile, approver, agent: "research-agent", owners: [owner.address], onDecision: d => decisions.push(d.type) })
+    const result = await hook!({ paymentRequired: { resource: { url: "https://shop/api/report" } }, selectedRequirements: hedera("250000") })
+    return { result: result as { abort?: boolean; reason?: string } | undefined, decisions }
+  }
+
+  test("pays once the owner signs this request", async () => {
+    let filed = ""
+    const { result, decisions } = await attempt({
+      request: async d => (filed = d.approvalId),
+      wait: async id => {
+        const signature = await owner.signMessage({ message: decisionMessage({ id, usd: "0.25", merchant: "Brickline", payTo: SHOP_HEDERA, agent: "research-agent" }, "approve") })
+        return { approved: true, by: owner.address, signature }
+      },
+    })
+    expect(filed).toMatch(/^[0-9a-f]{32}$/)
+    expect(result).toBeUndefined()
+    expect(decisions).toEqual(["agent.approval_requested", "agent.approved"])
+  })
+
+  test("a server that says 'approved' with no owner signature is blocked", async () => {
+    const { result, decisions } = await attempt({ request: async d => d.approvalId, wait: async () => ({ approved: true, by: owner.address }) })
+    expect(result?.reason).toBe("BLOCKED: the approval has no signature")
+    expect(decisions).toEqual(["agent.approval_requested", "agent.blocked"])
+  })
+
+  test("a server that files the request under its own ID is blocked before anyone is asked", async () => {
+    const { result, decisions } = await attempt({ request: async () => "c".repeat(32), wait: async () => ({ approved: true }) })
+    expect(result?.reason).toContain("BLOCKED: the approval request was filed as")
+    expect(decisions).toEqual(["agent.blocked"])
+  })
+
+  test("with no owners set up, nothing above the limit is paid", async () => {
+    let hook: ((ctx: unknown) => Promise<unknown>) | undefined
+    const client = { onBeforePaymentCreation: (f: typeof hook) => (hook = f), onPaymentResponse: () => {} }
+    const { guard } = await import("./index")
+    guard(client as never, { policy: live, stateFile, approver: { request: async d => d.approvalId, wait: async () => ({ approved: true }) }, agent: "research-agent" })
+    const result = (await hook!({ paymentRequired: {}, selectedRequirements: hedera("250000") })) as { reason?: string }
+    expect(result.reason).toContain("no one is set up to approve it")
   })
 })

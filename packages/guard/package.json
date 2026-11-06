@@ -5,13 +5,15 @@
   "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./limits": "./src/limits.ts"
+    "./limits": "./src/limits.ts",
+    "./approvals": "./src/approvals.ts"
   },
   "scripts": {
     "test": "bun test"
   },
   "dependencies": {
-    "@x402/core": "2.28.0"
+    "@x402/core": "2.28.0",
+    "viem": "2.57.16"
   },
   "devDependencies": {
     "@types/bun": "1.4.4"

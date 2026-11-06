@@ -1,5 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import type { x402Client } from "@x402/core/client"
+import { isAddress, verifyMessage, type Hex } from "viem"
+import { decisionMessage, newApprovalId } from "./approvals"
 
 // The spending guard: the agent's own limits, checked before any payment is signed.
 // It runs inside the agent's payment tool, below the model, so the model can't talk its way past it.
@@ -38,10 +40,27 @@ export type Decision = {
   by?: string // the owner's wallet that approved or denied
 }
 
-/** Asks the agent's owner about one payment: `request` files it, `wait` resolves with their answer. */
+/**
+ * Carries one paused payment to the agent's owner and back: `request` files it under the guard's
+ * own `approvalId` and returns the ID it was filed under; `wait` resolves with the answer. The
+ * guard doesn't trust either: an approval counts only if one of the owners signed it for this ID.
+ */
 export type Approver = {
-  request: (d: Decision) => Promise<string>
-  wait: (id: string) => Promise<{ approved: boolean; by?: string; reason?: string }>
+  request: (d: Decision & { approvalId: string }) => Promise<string>
+  wait: (id: string) => Promise<{ approved: boolean; by?: string; signature?: string; reason?: string }>
+}
+
+/** Why an answer that says "approved" doesn't count, or undefined if one of the owners signed it. */
+export async function approvalProblem(
+  subject: { id: string; usd: string; merchant?: string; payTo: string; agent: string },
+  answer: { by?: string; signature?: string },
+  owners: string[],
+): Promise<string | undefined> {
+  const { by, signature } = answer
+  if (!by || !isAddress(by) || !owners.some(o => same(o, by))) return `the approval came from ${by ?? "no one"}, not the agent's owner`
+  if (!signature) return "the approval has no signature"
+  const ok = await verifyMessage({ address: by, message: decisionMessage(subject, "approve"), signature: signature as Hex }).catch(() => false)
+  return ok ? undefined : `the approval's signature isn't ${short(by)}'s for this payment`
 }
 
 /** A seller as Till's registry on Arkiv lists it. */
@@ -140,6 +159,8 @@ export function guard(
     stateFile,
     onDecision,
     approver,
+    agent,
+    owners = [],
     registry,
   }: {
     /** The policy, or a function that gets it fresh for each payment (limits the owner changed on the console). */
@@ -147,6 +168,10 @@ export function guard(
     stateFile: string
     onDecision?: (d: Decision) => unknown
     approver?: Approver
+    /** The agent's name, as the owner's signed answers name it. */
+    agent?: string
+    /** The owner wallets whose signed answers count. With none, nothing above the auto-pay limit is paid. */
+    owners?: string[]
     /** Looks the payment up in Till's registry on Arkiv. A lookup that throws is a hard block. */
     registry?: (req: PaymentRequest) => Promise<RegistryView>
   },
@@ -182,14 +207,19 @@ export function guard(
     if (reasons.length > 0) return block(reasons)
     if (!needsApproval) return
     const limit = `above the ${money(p.approvalAboveUsd)} auto-pay limit`
-    if (!approver) return block([`${money(usd)} is ${limit} and no one is set up to approve it`])
+    if (!approver || !agent || owners.length === 0) return block([`${money(usd)} is ${limit} and no one is set up to approve it`])
 
-    // Allowed but unusual: pause and ask the owner. Nothing is signed until they say yes.
-    const ask: Decision = { type: "agent.approval_requested", ...base, reasons: [`${money(usd)} is ${limit}`] }
-    const approvalId = await approver.request(ask)
-    await onDecision?.({ ...ask, approvalId })
+    // Allowed but unusual: pause and ask the owner. Nothing is signed until an owner's signed yes
+    // for this exact request comes back.
+    const approvalId = newApprovalId()
+    const ask = { type: "agent.approval_requested" as const, ...base, approvalId, reasons: [`${money(usd)} is ${limit}`] }
+    const filedAs = await approver.request(ask)
+    if (filedAs !== approvalId) return block([`the approval request was filed as ${filedAs}, not ${approvalId}`])
+    await onDecision?.(ask)
     const answer = await approver.wait(approvalId)
     if (answer.approved) {
+      const problem = await approvalProblem({ id: approvalId, usd: base.usd, merchant: base.merchant, payTo: base.payTo, agent }, answer, owners)
+      if (problem) return block([problem])
       await onDecision?.({ type: "agent.approved", ...base, approvalId, by: answer.by })
       return
     }
