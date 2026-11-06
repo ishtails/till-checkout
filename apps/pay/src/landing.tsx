@@ -173,11 +173,8 @@ export function Landing() {
 
       <main className="mx-auto max-w-5xl px-5">
         <div className="pt-14 pb-10 sm:pt-24">
-          <MotionReveal preset="soft">
-            <Badge variant="neutral">Built at ETHGlobal Mumbai · live on testnet</Badge>
-          </MotionReveal>
           <MotionReveal preset="soft" delay={0.1}>
-            <h1 className="mt-5 max-w-3xl text-4xl leading-[1.05] text-balance sm:text-6xl">Get paid by people and AI agents that can't be tricked into overpaying.</h1>
+            <h1 className="max-w-3xl text-4xl leading-[1.05] text-balance sm:text-6xl">Get paid by people and AI agents that can't be tricked into overpaying.</h1>
           </MotionReveal>
           <MotionReveal preset="soft" delay={0.2}>
             <p className="mt-6 max-w-2xl text-lg text-pretty text-muted-foreground">
