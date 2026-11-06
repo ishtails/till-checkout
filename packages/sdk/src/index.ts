@@ -115,4 +115,39 @@ export class Checkout {
     }
     return JSON.parse(body)
   }
+
+  /**
+   * "Sign in with Till": where to send a customer so Till can tell you which wallet they are.
+   * Till sends them back to `returnUrl` (on your own site) with a `till_pass` query parameter.
+   */
+  async signInUrl(returnUrl: string) {
+    this.merchantInfo ??= this.call("/v1/merchant")
+    return `${(await this.merchantInfo).signInUrl}&return=${encodeURIComponent(returnUrl)}`
+  }
+
+  /**
+   * Checks a `till_pass` (from sign-in, or from the checkout's return after paying) and returns the
+   * customer's wallet, or null if the pass is forged or expired. Signed with your webhook secret.
+   */
+  verifySignIn(pass: string | undefined | null): { wallet: string; expiresAt: number } | null {
+    if (!pass) return null
+    const [payload, sig] = pass.split(".")
+    if (!payload || !sig) return null
+    const given = Buffer.from(sig, "hex")
+    const expected = createHmac("sha256", this.options.webhookSecret).update(payload).digest()
+    if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null
+    const { w, exp } = JSON.parse(Buffer.from(payload, "base64url").toString()) as { w: string; exp: number }
+    if (exp < Date.now() / 1000) return null
+    return { wallet: w, expiresAt: exp }
+  }
+
+  /** True if the pass belongs to the wallet that paid this order. */
+  async paidBy(orderId: string, pass: string | undefined | null) {
+    const who = this.verifySignIn(pass)
+    if (!who) return false
+    const order = await this.getOrder(orderId).catch(() => undefined)
+    return !!order && order.status !== "open" && order.payer?.toLowerCase() === who.wallet
+  }
+
+  private merchantInfo?: Promise<{ signInUrl: string }>
 }
