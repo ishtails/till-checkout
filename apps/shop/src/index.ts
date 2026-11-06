@@ -4,7 +4,7 @@ import { rentData } from "./data"
 import { home, report, waiting } from "./pages"
 
 const app = new Hono()
-const SHOP_URL = "http://localhost:3002"
+const SHOP_URL = process.env.SHOP_URL ?? "http://localhost:3002"
 const unlocked = new Set<string>()
 const unlockReport = (orderId: string) => unlocked.add(orderId)
 
