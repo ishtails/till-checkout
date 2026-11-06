@@ -18,7 +18,7 @@ import type { Hex } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { z } from "zod"
 import { AGENT_ID, logDecision, topicUrl } from "./hcs"
-import { currentPolicy } from "./policy"
+import { currentPolicy, owners } from "./policy"
 import { lookupMerchants } from "./registry"
 
 const AGENT = "research-agent"
@@ -56,8 +56,10 @@ client.registerExtension({
 })
 
 // Payments above the auto-pay limit go to the owner: filed with Till, answered on the console
-// (pay app /agent) with the owner's wallet signature. The agent waits up to five minutes.
+// (pay app /agent) with the owner's wallet signature. Till only carries the answer; the guard
+// checks the signature against the owners below. The agent waits up to five minutes.
 const API = process.env.TILL_API_URL ?? "http://localhost:3001"
+const WAIT_MS = 5 * 60_000 + 30_000
 const approver: Approver | undefined = process.env.AGENT_TOKEN
   ? {
       async request(d) {
@@ -70,13 +72,17 @@ const approver: Approver | undefined = process.env.AGENT_TOKEN
         return ((await res.json()) as { id: string }).id
       },
       async wait(id) {
-        for (;;) {
+        const until = Date.now() + WAIT_MS
+        while (Date.now() < until) {
           await Bun.sleep(1500)
-          const a = (await fetch(`${API}/v1/approvals/${id}`).then(r => r.json())) as { status: string; by?: string }
-          if (a.status === "approved") return { approved: true, by: a.by }
+          const a = (await fetch(`${API}/v1/approvals/${id}`)
+            .then(r => r.json())
+            .catch(() => ({ status: "unreachable" }))) as { status: string; by?: string; signature?: string }
+          if (a.status === "approved") return { approved: true, by: a.by, signature: a.signature }
           if (a.status === "denied") return { approved: false, by: a.by }
-          if (a.status === "expired") return { approved: false, reason: "the owner didn't answer within five minutes" }
+          if (a.status === "expired") break
         }
+        return { approved: false, reason: "the owner didn't answer within five minutes" }
       },
     }
   : undefined
@@ -92,6 +98,8 @@ guard(client, {
   policy: currentPolicy,
   stateFile: resolve(root, "data/agent-state.json"),
   approver,
+  agent: AGENT,
+  owners,
   // Read from Arkiv on every payment, so a change to the registry applies at once.
   registry: async req => registryView(await lookupMerchants(), req, seller),
   onDecision: async decision => {
