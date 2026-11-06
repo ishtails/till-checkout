@@ -35,6 +35,9 @@ app.post("/webhooks/checkout", async c => {
   return c.text("ok")
 })
 
+// Customers: Sign in with Till, no accounts to run
+app.get("/signin", async c => c.redirect(await checkout.signInUrl(next)))
+
 // Agents: charge per call
 app.use("/api/data", checkout.paywall({ price: "0.05" }))`
 
@@ -207,6 +210,7 @@ export function Landing() {
                   "Customers pay with an email. The shop covers the gas, under a thousandth of a WBT a payment.",
                   "Agents pay per call over x402. No account or API key.",
                   "Refund in one click, in full or in part. A CSV for the accountant.",
+                  "Sign in with Till: know which customer paid, with no accounts to run.",
                 ].map(t => (
                   <li key={t} className="flex gap-2">
                     <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-brand" weight="fill" />

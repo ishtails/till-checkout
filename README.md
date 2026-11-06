@@ -55,6 +55,7 @@ We tested the attack on Claude Haiku, Sonnet and Opus, 27 runs. Injected instruc
 - **Agents:** the shop's API answers with an x402 payment request. The agent's spending guard checks it against its limits, then the agent pays over x402 through a facilitator we run, on Whitechain (USDT) or Hedera (USDC).
 - **Refunds:** the merchant signs a refund for an order. The contract sends it back to the payer and won't refund more than was paid.
 - **Receipts:** after each payment or refund, the server saves a record of it on Arkiv. The customer's receipt page reads them from there.
+- **Sign in with Till:** the shop never runs accounts. After paying, Till sends the customer back with a pass, signed with the shop's webhook secret, that names the wallet that paid. On another device the customer signs in on Till with their email and their wallet signs a short message; Till checks it and returns the same kind of pass, only to the shop's own site. The demo shop opens the report and its CSV only for the wallet that paid (`checkout.paidBy(orderId, pass)`), so a shared link shows a sign-in page, not the report. Checked end to end in [`apps/server/scripts/signin-check.ts`](apps/server/scripts/signin-check.ts).
 
 | Piece | Folder | What it is |
 |---|---|---|
