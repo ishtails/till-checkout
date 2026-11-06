@@ -28,7 +28,7 @@ export const home = () =>
     <div class="card">
       <h2>Mumbai rent report, November 2026</h2>
       <p>2BHK and 1BHK median rents across Mumbai neighbourhoods.</p>
-      <form method="post" action="/buy"><button>Buy report · $5</button></form>
+      <form method="post" action="/buy"><button>Buy report · $0.10</button></form>
     </div>
     <div class="card">
       <h2>For AI agents</h2>

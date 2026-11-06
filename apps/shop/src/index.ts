@@ -5,6 +5,7 @@ import { home, report, waiting } from "./pages"
 
 const app = new Hono()
 const SHOP_URL = process.env.SHOP_URL ?? "http://localhost:3002"
+export const REPORT_PRICE = "0.10" // testnet price, low so the live demo's test-USDT faucet lasts
 const unlocked = new Set<string>()
 const unlockReport = (orderId: string) => unlocked.add(orderId)
 
@@ -14,7 +15,7 @@ const checkout = new Checkout({ apiKey: process.env.CHECKOUT_API_KEY!, webhookSe
 
 // People: sell the report
 app.post("/buy", async c => {
-  const order = await checkout.createOrder({ amount: "5.00", description: "Mumbai rent report", returnUrl: SHOP_URL + "/thanks" })
+  const order = await checkout.createOrder({ amount: REPORT_PRICE, description: "Mumbai rent report", returnUrl: SHOP_URL + "/thanks" })
   return c.redirect(order.checkoutUrl)
 })
 app.post("/webhooks/checkout", async c => {
