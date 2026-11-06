@@ -24,8 +24,9 @@ const WX = "https://explorer.testnet.whitechain.io/tx/"
 const integration = `import { Checkout } from "@till/sdk"
 const checkout = new Checkout({ apiKey, webhookSecret })
 
-// People: sell the report
+// People: sign in with Till, then buy the report
 app.post("/buy", async c => {
+  if (!checkout.verifySignIn(getCookie(c, "pass"))) return c.redirect("/signin?next=/buy")
   const order = await checkout.createOrder({ amount: "0.10", description: "Mumbai Rent Index", returnUrl })
   return c.redirect(order.checkoutUrl)
 })
@@ -35,7 +36,7 @@ app.post("/webhooks/checkout", async c => {
   return c.text("ok")
 })
 
-// Customers: Sign in with Till, no accounts to run
+// Sign in with Till: no accounts to run
 app.get("/signin", async c => c.redirect(await checkout.signInUrl(next)))
 
 // Agents: charge per call
