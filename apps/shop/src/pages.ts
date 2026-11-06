@@ -126,6 +126,7 @@ const layout = (title: string, body: unknown, user?: string) => html`<!doctype h
                       <p class="menu-wallet" title="${user}">${short(user)}</p>
                       <hr />
                       <a href="/purchases">My purchases</a>
+                      <a href="/receipts">All my receipts, on Till ↗</a>
                       <a href="/signout?switch=1">Switch account</a>
                       <a href="/signout">Sign out</a>
                     </div>

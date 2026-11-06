@@ -1,5 +1,5 @@
 import { Menu } from "@base-ui/react/menu"
-import { CopyIcon, SignOutIcon, UserSwitchIcon } from "@phosphor-icons/react"
+import { CopyIcon, ReceiptIcon, SignOutIcon, UserSwitchIcon } from "@phosphor-icons/react"
 import type { ReactNode } from "react"
 import { toast } from "sonner"
 
@@ -53,6 +53,9 @@ export function AccountMenu({
                 <CopyIcon className="size-4" /> Copy wallet address
               </Menu.Item>
             )}
+            <Menu.Item className={item} onClick={() => location.assign("/receipts")}>
+              <ReceiptIcon className="size-4" /> Your receipts
+            </Menu.Item>
             <Menu.Item className={item} onClick={onSwitch}>
               <UserSwitchIcon className="size-4" /> Switch account
             </Menu.Item>
