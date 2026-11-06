@@ -227,8 +227,7 @@ export function Landing() {
             <p className="mt-3 inline-flex items-center gap-1.5 rounded bg-destructive/20 px-2 py-0.5 text-red-300">
               <ProhibitIcon className="size-3.5" weight="bold" /> blocked before signing
             </p>
-            <p className="mt-1 text-primary-foreground/60">· payee not on the allowlist</p>
-            <p className="text-primary-foreground/60">· not Brickline's address on Arkiv</p>
+            <p className="mt-1 text-primary-foreground/60">· not Brickline's address on Arkiv</p>
             <p className="text-primary-foreground/60">· $0.50 is above the $0.30 per-call cap</p>
             <p className="mt-4 text-primary-foreground/40"># same agent, finds the shop on Arkiv</p>
             <p>402 · pay $0.05 to Brickline</p>
@@ -236,7 +235,7 @@ export function Landing() {
               <CheckCircleIcon className="size-3.5" weight="fill" /> paid $0.05 USDC on Hedera
             </p>
             <p className="mt-4 text-primary-foreground/40"># $0.25 is over its $0.10 auto-pay limit</p>
-            <p>waiting for the owner… approved on their phone</p>
+            <p>it waits; the owner approves on their phone</p>
             <p className="mt-1 inline-flex items-center gap-1.5 rounded bg-emerald-400/15 px-2 py-0.5 text-emerald-300">
               <CheckCircleIcon className="size-3.5" weight="fill" /> paid $0.25 USDC on Hedera
             </p>
@@ -255,7 +254,6 @@ export function Landing() {
                   "Customers pay with just an email. They never hold gas: the shop prepays it from a gas tank, in USDT.",
                   "Agents pay per call over x402. No account or API key.",
                   "Refund people and agents in one click, in full or in part. A CSV for the accountant.",
-                  "Sign in with Till: know which customer paid, with no accounts to run.",
                 ].map(t => (
                   <li key={t} className="flex gap-2">
                     <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-brand" weight="fill" />
@@ -266,11 +264,11 @@ export function Landing() {
             </Card>
             <Card className="gap-0 p-6">
               <ShieldCheckIcon className="size-6 text-brand" weight="duotone" />
-              <p className="mt-4 text-lg font-medium">For whoever runs the agent: the guard</p>
+              <p className="mt-4 text-lg font-medium">For the agent's owner: the guard</p>
               <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                 {[
                   "Limits live in the agent's wallet, below the model, so a web page can't change them.",
-                  "Only known payees, at the address the seller lists on Arkiv. A cap per call, a daily budget.",
+                  "Only known sellers, at their address on Arkiv, within a cap per call and a daily budget.",
                   "Wrong is blocked outright. Unusual, above the auto-pay limit, waits for the owner's OK on their phone.",
                   "Limits and approvals count only when the owner's wallet signs them, so not even Till can change them.",
                   "Every payment, approval and block goes on a public log on Hedera.",
@@ -287,7 +285,7 @@ export function Landing() {
 
         <Section eyebrow="Why the limit lives in the wallet" title="A poisoned link fooled every model I tried. The guard caught every one.">
           <p className="mt-4 max-w-2xl text-muted-foreground">
-            I ran the attack 27 times on Claude Haiku, Sonnet and Opus. Injected instructions didn't work. But a review page linking to a look-alike API fooled every model, every time, because nothing on the page gives it away. Only the payment request shows the real price and payee, and that's where Till checks.
+            I ran the attack 27 times on Claude Haiku, Sonnet and Opus. Instructions planted on the page didn't work. But a review page linking to a look-alike API fooled every model, every time, because nothing on the page gives it away. Only the payment request shows the real price and payee, and that's where Till checks.
           </p>
           <StaggerGrid className="mt-8 grid gap-3 sm:grid-cols-3">
             <Card className="gap-0 p-5">
