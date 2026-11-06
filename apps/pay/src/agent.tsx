@@ -83,7 +83,14 @@ function OnArkiv({ listing, payTo, loading }: { listing?: ListingRecord; payTo: 
 }
 
 // The agent's registered identity, and whether the log this console reads is the one its owner registered.
-function IdentityCard({ identity, topicId }: { identity?: AgentIdentity | "error"; topicId?: string }) {
+function IdentityCard({ identity, topicId, owner }: { identity?: AgentIdentity | "error"; topicId?: string; owner?: string }) {
+  // The registry entry was registered by Till's test owner key: the console's owner is an email
+  // wallet, which can't send transactions on Hedera, and handing the entry over would clear the
+  // agent's wallet. Say so rather than show two owners without a reason.
+  const ownerNote = (registered: string) =>
+    owner && registered.toLowerCase() !== owner.toLowerCase()
+      ? `, Till's test owner key, which can also approve. It registered the agent because your email wallet (${short(owner)}) can't send transactions on Hedera yet`
+      : ""
   if (!identity) return <Muted className="mt-4">Reading the agent's identity on Hedera…</Muted>
   if (identity === "error") return <Muted className="mt-4">Couldn't read the agent's identity on Hedera just now.</Muted>
   const logMatches = !!topicId && identity.hcsTopic === topicId
@@ -97,7 +104,8 @@ function IdentityCard({ identity, topicId }: { identity?: AgentIdentity | "error
             <span className="text-xs font-normal text-muted-foreground">ERC-8004 on Hedera</span>
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Owned by <span className="font-mono">{short(identity.owner)}</span>. Pays from <span className="font-mono">{short(identity.wallet)}</span> on Whitechain
+            Owned by <span className="font-mono">{short(identity.owner)}</span>
+            {ownerNote(identity.owner)}. Pays from <span className="font-mono">{short(identity.wallet)}</span> on Whitechain
             (that wallet signed that it's this agent's) and <span className="font-mono">{identity.hederaAccount}</span> on Hedera. Shops it pays see it as a verified agent.
           </p>
           <p className={`mt-1 text-xs ${logMatches ? "text-muted-foreground" : "text-destructive"}`}>
@@ -263,7 +271,7 @@ export function AgentConsole() {
           {info?.topicId && <RecordLink href={`https://hashscan.io/testnet/topic/${info.topicId}`}>Log on HashScan · {info.topicId}</RecordLink>}
         </div>
 
-        <IdentityCard identity={identity} topicId={info?.topicId ?? undefined} />
+        <IdentityCard identity={identity} topicId={info?.topicId ?? undefined} owner={info?.owner ?? undefined} />
 
         {pending.map(a => (
           <Card key={a.id} className="mt-6 gap-0 border-warning/60 bg-warning/10 p-5 ring-2 ring-warning/30">
