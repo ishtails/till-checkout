@@ -5,7 +5,9 @@ import { html } from "hono/html"
 type Row = { area: string; bhk2: number; bhk1: number }
 const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`
 
-const layout = (title: string, body: unknown) => html`<!doctype html>
+const short = (w: string) => `${w.slice(0, 6)}…${w.slice(-4)}`
+
+const layout = (title: string, body: unknown, user?: string) => html`<!doctype html>
   <html lang="en">
     <head>
       <meta charset="utf-8" />
@@ -30,6 +32,12 @@ const layout = (title: string, body: unknown) => html`<!doctype html>
         .mark { width: 30px; height: 30px; border-radius: 8px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-family: "Instrument Serif", serif; font-size: 20px; }
         nav .links { display: flex; gap: 22px; font-size: 14px; color: var(--muted); }
         nav .links a { text-decoration: none; } nav .links a:hover { color: var(--ink); }
+        nav .right { display: flex; align-items: center; gap: 22px; }
+        .account { display: flex; align-items: center; gap: 14px; font-size: 14px; color: var(--muted); }
+        .account a { text-decoration: none; } .account a:hover { color: var(--ink); }
+        .account .who { font-family: ui-monospace, Menlo, monospace; font-size: 13px; background: #fff; border: 1px solid var(--line); padding: 3px 8px; border-radius: 99px; color: var(--ink); }
+        .till-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--till); color: #fff !important; padding: 8px 14px; border-radius: 10px; font-weight: 600; font-size: 14px; }
+        .till-btn:hover { filter: brightness(1.1); }
         .serif { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
         .hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 48px; align-items: center; padding: 40px 0 56px; }
         .eyebrow { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--accent-ink); background: var(--accent-soft); padding: 4px 10px; border-radius: 99px; font-weight: 500; }
@@ -64,6 +72,7 @@ const layout = (title: string, body: unknown) => html`<!doctype html>
           .hero, .agents { grid-template-columns: 1fr; gap: 28px; padding-top: 16px; }
           .grid3 { grid-template-columns: 1fr; }
           nav .links { display: none; }
+          .account .who { display: none; }
         }
       </style>
     </head>
@@ -75,19 +84,29 @@ const layout = (title: string, body: unknown) => html`<!doctype html>
       <div class="wrap">
         <nav>
           <a class="brand" href="/"><span class="mark">B</span> Brickline</a>
-          <div class="links"><a href="/#report">The report</a><a href="/#api">For AI agents</a></div>
+          <div class="right">
+            <div class="links"><a href="/#report">The report</a><a href="/#api">For AI agents</a></div>
+            <div class="account">
+              ${user
+                ? html`<span class="who" title="${user}">${short(user)}</span><a href="/purchases">My purchases</a><a href="/signout">Sign out</a>`
+                : html`<a class="till-btn" href="/signin?next=/">Sign in with Till</a>`}
+            </div>
+          </div>
         </nav>
       </div>
       ${body}
     </body>
   </html>`
 
-const buyButton = html`<form method="post" action="/buy">
+const buyButton = (user?: string) => html`<form method="post" action="/buy">
     <button class="btn">Buy the report <span class="price">$0.10</span></button>
   </form>
-  <p class="note"><span class="dot"></span> Pay with just your email. No wallet app, no gas.</p>`
+  <p class="note">
+    <span class="dot"></span>
+    ${user ? html`Signed in with Till. Pay with the same email, no gas.` : html`Sign in with Till, then pay with just your email. No wallet app, no gas.`}
+  </p>`
 
-export const home = (rows: Row[]) =>
+export const home = (rows: Row[], user?: string) =>
   layout(
     "Brickline · Rent data for Indian cities",
     html`
@@ -97,7 +116,7 @@ export const home = (rows: Row[]) =>
             <span class="eyebrow">November 2026 · ${rows.length} neighbourhoods</span>
             <h1 class="serif">What does a 2BHK really cost in Mumbai?</h1>
             <p class="lead">Median monthly rents for 1BHK and 2BHK flats, neighbourhood by neighbourhood. One clean report, updated every month.</p>
-            ${buyButton}
+            ${buyButton(user)}
           </div>
           <div class="card preview">
             <h3>Mumbai Rent Index</h3>
@@ -139,9 +158,10 @@ export const home = (rows: Row[]) =>
       </main>
       <footer><div class="wrap">Brickline is a demo shop built for Till. The figures are sample data.</div></footer>
     `,
+    user,
   )
 
-export const report = (rows: Row[], orderId: string) =>
+export const report = (rows: Row[], orderId: string, user?: string) =>
   layout(
     "Your report · Brickline",
     html`
@@ -162,9 +182,10 @@ export const report = (rows: Row[], orderId: string) =>
         </div>
       </main>
     `,
+    user,
   )
 
-export const waiting = () =>
+export const waiting = (user?: string) =>
   layout(
     "Waiting for payment · Brickline",
     html`
@@ -175,6 +196,7 @@ export const waiting = () =>
         <p class="lead">Your report opens here on its own as soon as the payment is confirmed. It usually takes a few seconds.</p>
       </main>
     `,
+    user,
   )
 
 export const locked = (signInHref: string, signedInAs?: string) =>
@@ -193,4 +215,36 @@ export const locked = (signInHref: string, signedInAs?: string) =>
         <p class="note" style="margin-top:20px"><a href="/">← Back to the shop</a></p>
       </main>
     `,
+    signedInAs,
+  )
+
+type Purchase = { id: string; description: string; amount: string; refunded: string; status: string; createdAt: number }
+
+export const purchases = (orders: Purchase[], user: string) =>
+  layout(
+    "My purchases · Brickline",
+    html`
+      <main class="page">
+        <span class="eyebrow">Signed in with Till · ${short(user)}</span>
+        <h1 class="serif" style="margin-top:16px">My purchases</h1>
+        <p class="lead">Everything this wallet bought from Brickline. We don't keep accounts: Till tells us which wallet you are, and what it paid for.</p>
+        ${orders.length === 0
+          ? html`<div class="card preview"><p class="sub" style="margin:0">Nothing yet. <a href="/#report">Buy the report</a>.</p></div>`
+          : html`<div class="card preview">
+              <table>
+                <tr><th>Report</th><th>Date</th><th class="num">Paid</th><th></th></tr>
+                ${orders.map(
+                  o => html`<tr>
+                    <td>${o.description}${Number(o.refunded) > 0 ? html`<br /><small class="muted">$${Number(o.refunded).toFixed(2)} refunded</small>` : ""}</td>
+                    <td>${new Date(o.createdAt * 1000).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td>
+                    <td class="num">$${Number(o.amount).toFixed(2)}</td>
+                    <td class="num"><a href="/thanks?order=${o.id}">Open</a> · <a href="/report.csv?order=${o.id}">CSV</a></td>
+                  </tr>`,
+                )}
+              </table>
+            </div>`}
+        <p class="note" style="margin-top:20px"><a href="/">← Back to the shop</a></p>
+      </main>
+    `,
+    user,
   )
