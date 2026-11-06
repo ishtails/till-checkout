@@ -23,6 +23,17 @@ import { friendly } from "./lib/errors"
 import { Badge, Button, Card, Logo, Muted, RecordLink } from "./ui"
 
 const USDT = "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
+// EIP-3009: the merchant's signed transfer back to the agent, which our relayer submits.
+const transferTypes = {
+  TransferWithAuthorization: [
+    { name: "from", type: "address" },
+    { name: "to", type: "address" },
+    { name: "value", type: "uint256" },
+    { name: "validAfter", type: "uint256" },
+    { name: "validBefore", type: "uint256" },
+    { name: "nonce", type: "bytes32" },
+  ],
+}
 const short = (s: string) => `${s.slice(0, 6)}…${s.slice(-4)}`
 
 function Stat({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: string; note: string }) {
@@ -53,8 +64,9 @@ export function Dashboard() {
   // The refund amount typed for each order, in USD. Empty means the full amount left.
   const [amounts, setAmounts] = useState<Record<string, string>>({})
   const [error, setError] = useState<string>()
-  // The order waiting for the merchant to confirm its refund.
+  // The order, or agent payment, waiting for the merchant to confirm its refund.
   const [confirming, setConfirming] = useState<Order>()
+  const [confirmingAgent, setConfirmingAgent] = useState<AgentPayment>()
 
   const address = wallets.find(w => w.walletClientType === "privy")?.address as Address | undefined
 
@@ -127,6 +139,41 @@ export function Dashboard() {
     }
   }
 
+  async function refundAgent(p: AgentPayment) {
+    if (!address) return
+    setBusy(p.key)
+    try {
+      const info = await api.agentRefundInfo(p.key)
+      const value = BigInt(info.remainingAtomic)
+      if (value <= 0n) throw new Error("Already refunded in full.")
+      if (info.from.toLowerCase() !== address.toLowerCase()) throw new Error(`This was paid to ${short(info.from)}. Sign in with that wallet to refund it.`)
+      const { signature } = await signTypedData(
+        {
+          domain: info.domain,
+          types: transferTypes,
+          primaryType: "TransferWithAuthorization",
+          message: { from: address, to: info.to, value: value.toString(), validAfter: "0", validBefore: String(info.validBefore), nonce: info.nonce },
+        },
+        { address, uiOptions: { showWalletUIs: false } },
+      )
+      const { txHash } = await api.agentRefund(p.key, {
+        amount: (Number(value) / 1e6).toString(),
+        nonce: info.nonce,
+        validBefore: info.validBefore,
+        signature: signature as Hex,
+      })
+      toast.success(`Refunded $${(Number(value) / 1e6).toFixed(2)} to the agent`, {
+        description: "Sent back to its wallet on Whitechain.",
+        action: { label: "View", onClick: () => window.open(explorerTx(txHash), "_blank") },
+      })
+      setAgentPayments(await api.agentPayments().then(all => all.filter(x => x.merchantId === merchantId)))
+    } catch (e) {
+      toast.error(friendly((e as Error).message))
+    } finally {
+      setBusy(undefined)
+    }
+  }
+
   const merchantWallet = orders?.find(o => o.paidTo)?.paidTo
   const wrongWallet = authenticated && address && merchantWallet && merchantWallet.toLowerCase() !== address.toLowerCase()
   const switchAccount = async () => {
@@ -137,7 +184,7 @@ export function Dashboard() {
   const refundAmount = (o: Order) => Number(amounts[o.id]?.trim() || refundLeft(o))
 
   const received = orders?.reduce((a, o) => a + Number(o.amount) - Number(o.refunded), 0) ?? 0
-  const agentTotal = agentPayments?.reduce((a, p) => a + Number(p.amount) / 1e6, 0) ?? 0
+  const agentTotal = agentPayments?.reduce((a, p) => a + (Number(p.amount) - Number(p.refunded ?? 0)) / 1e6, 0) ?? 0
 
   return (
     <div className="min-h-svh">
@@ -277,7 +324,7 @@ export function Dashboard() {
 
         <div className="mt-10">
           <h2 className="text-lg">Agent payments</h2>
-          <Muted>Paid per API call over x402, straight to your wallet. These are final, so they can't be refunded.</Muted>
+          <Muted>Paid per API call over x402, straight to your wallet. Refund a Whitechain payment here, with no gas; refund Hedera ones from your Hedera wallet.</Muted>
         </div>
         <Card className="mt-4 gap-0 py-0">
           {!agentPayments ? (
@@ -293,6 +340,7 @@ export function Dashboard() {
                   <TableHead className="px-4 text-xs font-normal text-muted-foreground">Paid in</TableHead>
                   <TableHead className="px-4 text-right text-xs font-normal text-muted-foreground">Amount</TableHead>
                   <TableHead className="px-4 text-xs font-normal text-muted-foreground">Record</TableHead>
+                  <TableHead className="px-4" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -305,9 +353,23 @@ export function Dashboard() {
                       <TableCell className="px-4 py-3">
                         <Badge variant="neutral">{hedera ? "USDC on Hedera" : "USDT on Whitechain"}</Badge>
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-right tabular-nums">${(Number(p.amount) / 1e6).toFixed(2)}</TableCell>
+                      <TableCell className="px-4 py-3 text-right tabular-nums">
+                        ${(Number(p.amount) / 1e6).toFixed(2)}
+                        {Number(p.refunded ?? 0) > 0 && <p className="text-xs text-warning-foreground">−${(Number(p.refunded) / 1e6).toFixed(2)}</p>}
+                      </TableCell>
                       <TableCell className="px-4 py-3">
-                        <RecordLink href={agentExplorerTx(p)}>{hedera ? "HashScan" : "Explorer"}</RecordLink>
+                        <div className="flex flex-col items-start gap-1">
+                          {Number(p.refunded ?? 0) > 0 && <Badge variant="refunded">Refunded</Badge>}
+                          <RecordLink href={p.refunds?.length ? explorerTx(p.refunds.at(-1)!.tx) : agentExplorerTx(p)}>{hedera ? "HashScan" : "Explorer"}</RecordLink>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right">
+                        {/* Only the wallet that was paid can sign the refund, and only on Whitechain. */}
+                        {!hedera && address && p.payTo.toLowerCase() === address.toLowerCase() && Number(p.refunded ?? 0) < Number(p.amount) && (
+                          <Button variant="outline" size="sm" isLoading={busy === p.key} disabled={busy !== undefined} onClick={() => setConfirmingAgent(p)}>
+                            Refund
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   )
@@ -339,6 +401,30 @@ export function Dashboard() {
                 const o = confirming
                 setConfirming(undefined)
                 if (o) void refund(o)
+              }}
+            >
+              Refund
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmingAgent} onOpenChange={open => !open && setConfirmingAgent(undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Refund ${confirmingAgent ? ((Number(confirmingAgent.amount) - Number(confirmingAgent.refunded ?? 0)) / 1e6).toFixed(2) : ""} to the agent?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmingAgent && <>It goes back to the agent's wallet {short(confirmingAgent.payer)} in USDT on Whitechain. You pay no gas. Refunds can't be undone.</>}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel variant="outline">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="brand"
+              onClick={() => {
+                const p = confirmingAgent
+                setConfirmingAgent(undefined)
+                if (p) void refundAgent(p)
               }}
             >
               Refund

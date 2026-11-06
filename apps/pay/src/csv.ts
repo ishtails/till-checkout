@@ -13,6 +13,9 @@ export function ledgerCsv(orders: Order[], agentPayments: AgentPayment[]) {
   for (const p of agentPayments) {
     const asset = p.network.startsWith("hedera") ? "USDC on Hedera" : "USDT on Whitechain"
     rows.push([p.ts, "agent payment", "", "API call", p.payer, asset, String(Number(p.amount) / 1e6), p.transaction, agentExplorerTx(p)])
+    for (const r of p.refunds ?? []) {
+      rows.push([r.ts, "agent refund", "", "API call", p.payer, asset, `-${Number(r.amount) / 1e6}`, r.tx, explorerTx(r.tx)])
+    }
   }
   rows.sort((a, b) => Number(a[0]) - Number(b[0]))
 

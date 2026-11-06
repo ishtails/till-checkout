@@ -32,6 +32,10 @@ export type CheckoutInfo = Order & {
 }
 
 export type AgentPayment = {
+  key: string
+  payTo: string
+  refunded?: string // atomic
+  refunds?: { amount: string; tx: Hex; ts: number }[]
   merchantId: string
   network: string
   amount: string // atomic, 6 decimals
@@ -81,6 +85,15 @@ export type Approval = {
   by?: string
 }
 
+export type AgentRefundInfo = {
+  from: Address
+  to: Address
+  remainingAtomic: string
+  nonce: Hex
+  validBefore: number
+  domain: CheckoutInfo["domain"]
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(API + path, { ...init, headers: { "content-type": "application/json", ...init?.headers } })
   const body = await res.json()
@@ -99,6 +112,9 @@ export const api = {
   refundInfo: (id: string) => call<RefundInfo>(`/v1/orders/${id}/refund`),
   refund: (id: string, body: { amount: string; validAfter: number; validBefore: number; signature: Hex }) =>
     call<{ txHash: Hex }>(`/v1/orders/${id}/refund`, { method: "POST", body: JSON.stringify(body) }),
+  agentRefundInfo: (key: string) => call<AgentRefundInfo>(`/v1/agent-payments/${encodeURIComponent(key)}/refund`),
+  agentRefund: (key: string, body: { amount: string; nonce: Hex; validBefore: number; signature: Hex }) =>
+    call<{ txHash: Hex }>(`/v1/agent-payments/${encodeURIComponent(key)}/refund`, { method: "POST", body: JSON.stringify(body) }),
   signinInfo: (merchant: string) => call<{ merchant: string; name: string }>(`/v1/signin/${merchant}`),
   signin: (body: { merchant: string; address: Address; issuedAt: string; signature: Hex; returnUrl: string }) =>
     call<{ redirect: string }>("/v1/signin", { method: "POST", body: JSON.stringify(body) }),

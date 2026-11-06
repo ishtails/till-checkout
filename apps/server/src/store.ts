@@ -36,6 +36,8 @@ export type Settlement = {
   transaction: string
   ts: number
   response: unknown // the SettleResponse returned the first time, returned again on a retry
+  refunded?: string // atomic, Whitechain only (agent-refund.ts)
+  refunds?: { amount: string; tx: Hex; ts: number }[]
 }
 
 // A payment the agent's guard paused for its owner: allowed by every rule, but above the auto-pay limit.

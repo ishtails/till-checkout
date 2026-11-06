@@ -30,7 +30,7 @@ gas.get("/v1/gas", async c => {
   const agentPayments = store
     .listSettlements()
     .filter(s => s.merchantId === merchantId && s.network === "eip155:1874")
-    .map(s => s.transaction as Hex)
+    .flatMap(s => [s.transaction as Hex, ...(s.refunds ?? []).map(r => r.tx)])
 
   const [paymentsWbt, refundsWbt, agentWbt] = await Promise.all([sum(payments), sum(refunds), sum(agentPayments)])
   const total = paymentsWbt + refundsWbt + agentWbt
