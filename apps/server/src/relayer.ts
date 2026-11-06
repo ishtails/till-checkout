@@ -64,6 +64,9 @@ export async function relay(merchantId: string, to: Hex, data: Hex) {
 
   const cap = capReached(merchantId)
   if (cap) throw new RelayError(cap)
+  // The merchant's gas tank must have credit (imported here, not at the top, to avoid a cycle).
+  const empty = await (await import("./gas-tank")).tankEmpty(merchantId)
+  if (empty) throw new RelayError(empty)
 
   // Rule 4: simulate the exact call. If it would revert, nothing is sent and we spend no gas.
   try {

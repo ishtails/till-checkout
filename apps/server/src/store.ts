@@ -57,7 +57,11 @@ export type Approval = {
   signature?: string // the owner's signed decision, so anyone can check it
 }
 
+// USDT a merchant put in its gas tank (gas-tank.ts).
+export type Topup = { amount: string; from: string; tx: Hex; ts: number }
+
 type Data = {
+  topups: Record<string, Topup[]> // by merchant id
   approvals: Record<string, Approval>
   orders: Record<string, Order>
   settlements: Record<string, Settlement>
@@ -66,8 +70,8 @@ type Data = {
 
 // D9: in memory, saved to one JSON file on every change, so it survives restarts.
 function load(): Data {
-  if (!existsSync(config.storeFile)) return { orders: {}, settlements: {}, faucet: {}, approvals: {} }
-  return { settlements: {}, faucet: {}, approvals: {}, ...JSON.parse(readFileSync(config.storeFile, "utf8")) }
+  if (!existsSync(config.storeFile)) return { orders: {}, settlements: {}, faucet: {}, approvals: {}, topups: {} }
+  return { settlements: {}, faucet: {}, approvals: {}, topups: {}, ...JSON.parse(readFileSync(config.storeFile, "utf8")) }
 }
 
 const data = load()
@@ -91,6 +95,11 @@ export const store = {
   listSettlements: () => Object.values(data.settlements).sort((a, b) => b.ts - a.ts),
   putSettlement(s: Settlement) {
     data.settlements[s.key] = s
+    save()
+  },
+  listTopups: (merchantId: string) => data.topups[merchantId] ?? [],
+  putTopup(merchantId: string, t: Topup) {
+    data.topups[merchantId] = [...(data.topups[merchantId] ?? []), t]
     save()
   },
   getApproval: (id: string) => data.approvals[id],

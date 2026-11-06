@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import type { Address, Hex } from "viem"
 import { parseUnits } from "viem"
-import { agentExplorerTx, api, explorerTx, usdtBalance, type AgentPayment, type GasMeter, type Order } from "./api"
+import { agentExplorerTx, api, explorerTx, usdtBalance, type AgentPayment, type GasTank, type Order } from "./api"
 import { receiveTypes } from "./checkout"
 import {
   AlertDialog,
@@ -58,7 +58,7 @@ export function Dashboard() {
   const { signTypedData } = useSignTypedData()
   const [orders, setOrders] = useState<Order[]>()
   const [agentPayments, setAgentPayments] = useState<AgentPayment[]>()
-  const [gas, setGas] = useState<GasMeter>()
+  const [tank, setTank] = useState<GasTank>()
   const [balance, setBalance] = useState<number>()
   const [busy, setBusy] = useState<string>()
   // The refund amount typed for each order, in USD. Empty means the full amount left.
@@ -74,7 +74,7 @@ export function Dashboard() {
   const load = () => api.orders(merchantId).then(all => setOrders(all.filter(o => o.status !== "open")), e => setError(e.message))
   useEffect(() => void load(), [merchantId])
   useEffect(() => {
-    api.gas(merchantId).then(setGas, () => {})
+    api.gasTank(merchantId).then(setTank, () => {})
   }, [merchantId, orders])
   useEffect(() => {
     const loadAgents = () => api.agentPayments().then(all => setAgentPayments(all.filter(p => p.merchantId === merchantId)), () => {})
@@ -174,6 +174,33 @@ export function Dashboard() {
     }
   }
 
+  // The merchant prepays gas in USDT: a signed transfer to Till's gas wallet, which our relayer submits.
+  async function topUp(amount: string) {
+    if (!address || !tank) return
+    setBusy("topup")
+    try {
+      const t = (await api.gasTank(merchantId)).topup
+      const value = parseUnits(amount, 6)
+      const { signature } = await signTypedData(
+        {
+          domain: t.domain,
+          types: transferTypes,
+          primaryType: "TransferWithAuthorization",
+          message: { from: address, to: t.to, value: value.toString(), validAfter: "0", validBefore: String(t.validBefore), nonce: t.nonce },
+        },
+        { address, uiOptions: { showWalletUIs: false } },
+      )
+      const { txHash } = await api.topUp({ merchant: merchantId, from: address, amount, nonce: t.nonce, validBefore: t.validBefore, signature: signature as Hex })
+      toast.success(`Added $${amount} to your gas tank`, { action: { label: "View", onClick: () => window.open(explorerTx(txHash), "_blank") } })
+      setTank(await api.gasTank(merchantId))
+      setBalance(await usdtBalance(address, USDT))
+    } catch (e) {
+      toast.error(friendly((e as Error).message))
+    } finally {
+      setBusy(undefined)
+    }
+  }
+
   const merchantWallet = orders?.find(o => o.paidTo)?.paidTo
   const wrongWallet = authenticated && address && merchantWallet && merchantWallet.toLowerCase() !== address.toLowerCase()
   const switchAccount = async () => {
@@ -221,12 +248,31 @@ export function Dashboard() {
         <div className="grid gap-3 sm:grid-cols-3">
           <Stat icon={<ShoppingBagIcon weight="fill" />} label="Received from customers" value={`$${received.toFixed(2)}`} note={`${orders?.length ?? 0} orders, after refunds`} />
           <Stat icon={<RobotIcon weight="fill" />} label="Paid by AI agents" value={`$${agentTotal.toFixed(2)}`} note={`${agentPayments?.length ?? 0} API calls over x402`} />
-          <Stat
-            icon={<GasPumpIcon weight="fill" />}
-            label="Gas we paid for you"
-            value={gas ? `${Number(gas.totalWbt).toFixed(4)} WBT` : "…"}
-            note={gas ? `About ${Number(gas.perTxWbt).toFixed(5)} WBT a transaction. Your customers and agents paid none.` : ""}
-          />
+          <Card className="gap-0 p-5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="flex size-6 items-center justify-center rounded-md bg-secondary text-secondary-foreground [&_svg]:size-3.5">
+                  <GasPumpIcon weight="fill" />
+                </span>
+                Gas tank
+              </div>
+              {address && (!merchantWallet || merchantWallet.toLowerCase() === address.toLowerCase()) && (
+                <Button variant="outline" size="xs" isLoading={busy === "topup"} disabled={busy !== undefined || !tank} onClick={() => topUp("1")}>
+                  Top up $1
+                </Button>
+              )}
+            </div>
+            <p className={`mt-3 text-2xl font-semibold tracking-tight tabular-nums ${tank && tank.balanceUsd <= 0 ? "text-destructive" : ""}`}>
+              {tank ? `$${tank.balanceUsd.toFixed(2)}` : "…"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {tank
+                ? tank.balanceUsd <= 0
+                  ? "Empty: payments are paused until you top up."
+                  : `${tank.txLeft !== null ? `About ${tank.txLeft} more transactions. ` : ""}Your customers and agents pay no gas; you pay it at cost + ${Math.round(tank.margin * 100)}%, in USDT.`
+                : ""}
+            </p>
+          </Card>
         </div>
 
         {wrongWallet && (

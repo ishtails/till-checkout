@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { cors } from "hono/cors"
 import { agentRefund } from "./agent-refund"
+import { gasTank } from "./gas-tank"
 import { approvals } from "./approvals"
 import { config } from "./config"
 import { facilitatorRoutes } from "./facilitator"
@@ -26,6 +27,7 @@ app.route("/", faucet)
 app.route("/", signin)
 app.route("/", approvals)
 app.route("/", agentRefund)
+app.route("/", gasTank)
 app.route("/", registry)
 
 // List merchants on Arkiv in the background: a save takes a few seconds and startup shouldn't wait.

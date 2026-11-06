@@ -55,6 +55,20 @@ export type GasMeter = {
   agentPayments: { count: number; wbt: string }
 }
 
+export type GasTank = {
+  balanceUsd: number
+  creditsUsd: number
+  chargedUsd: number
+  tillEarnedUsd: number
+  perTxUsd: number
+  txLeft: number | null
+  topups: { amount: string; from: string; tx: Hex; ts: number }[]
+  wbtUsd: number
+  margin: number
+  startUsd: number
+  topup: { to: Address; nonce: Hex; validBefore: number; domain: CheckoutInfo["domain"] }
+}
+
 export type RefundInfo = {
   from: Address
   to: Address
@@ -108,6 +122,9 @@ export const api = {
     call<{ txHash: Hex; pass: string }>(`/v1/checkout/${id}/pay`, { method: "POST", body: JSON.stringify(body) }),
   orders: (merchant: string) => call<Order[]>(`/v1/orders?merchant=${merchant}`),
   gas: (merchant: string) => call<GasMeter>(`/v1/gas?merchant=${merchant}`),
+  gasTank: (merchant: string) => call<GasTank>(`/v1/gas-tank?merchant=${merchant}`),
+  topUp: (body: { merchant: string; from: Address; amount: string; nonce: Hex; validBefore: number; signature: Hex }) =>
+    call<{ txHash: Hex }>("/v1/gas-tank/topup", { method: "POST", body: JSON.stringify(body) }),
   agentPayments: () => call<AgentPayment[]>("/v1/agent-payments"),
   refundInfo: (id: string) => call<RefundInfo>(`/v1/orders/${id}/refund`),
   refund: (id: string, body: { amount: string; validAfter: number; validBefore: number; signature: Hex }) =>

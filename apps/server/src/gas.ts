@@ -19,11 +19,8 @@ async function feeOf(hash: Hex) {
 
 const sum = async (hashes: Hex[]) => (await Promise.all(hashes.map(feeOf))).reduce((a, b) => a + b, 0n)
 
-export const gas = new Hono()
-
-gas.get("/v1/gas", async c => {
-  const merchantId = c.req.query("merchant")
-  if (!merchantId) return c.json({ error: "merchant required" }, 400)
+/** Every Whitechain transaction our relayer paid for one merchant, and what each kind cost in WBT. */
+export async function merchantGasWbt(merchantId: string) {
   const orders = store.listOrders(merchantId)
   const payments = orders.flatMap(o => (o.payTx ? [o.payTx] : []))
   const refunds = orders.flatMap(o => o.refunds.map(r => r.tx))
@@ -35,6 +32,15 @@ gas.get("/v1/gas", async c => {
   const [paymentsWbt, refundsWbt, agentWbt] = await Promise.all([sum(payments), sum(refunds), sum(agentPayments)])
   const total = paymentsWbt + refundsWbt + agentWbt
   const count = payments.length + refunds.length + agentPayments.length
+  return { totalWbt: total, count, payments, refunds, agentPayments, paymentsWbt, refundsWbt, agentWbt }
+}
+
+export const gas = new Hono()
+
+gas.get("/v1/gas", async c => {
+  const merchantId = c.req.query("merchant")
+  if (!merchantId) return c.json({ error: "merchant required" }, 400)
+  const { totalWbt: total, count, payments, refunds, agentPayments, paymentsWbt, refundsWbt, agentWbt } = await merchantGasWbt(merchantId)
   return c.json({
     totalWbt: formatEther(total),
     perTxWbt: count ? formatEther(total / BigInt(count)) : "0",

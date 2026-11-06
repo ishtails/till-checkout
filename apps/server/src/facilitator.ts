@@ -1,4 +1,5 @@
 import { x402Facilitator } from "@x402/core/facilitator"
+import { tankEmpty } from "./gas-tank"
 import type { PaymentPayload, PaymentRequirements } from "@x402/core/types"
 import { toFacilitatorEvmSigner } from "@x402/evm"
 import { ExactEvmScheme } from "@x402/evm/exact/facilitator"
@@ -111,6 +112,12 @@ async function settle(paymentPayload: PaymentPayload, requirements: PaymentRequi
   const seen = store.getSettlement(key)
   if (seen) return seen.response
 
+  // Whitechain gas comes out of the merchant's gas tank, so an empty tank stops the payment here.
+  if (requirements.network === WHITECHAIN) {
+    const owner = findMerchantByPayTo(requirements.payTo)
+    const empty = owner && (await tankEmpty(owner.id))
+    if (empty) throw new Error(empty)
+  }
   const response = await facilitator.settle(paymentPayload, requirements)
   if (response.success) {
     const merchant = findMerchantByPayTo(requirements.payTo)!
