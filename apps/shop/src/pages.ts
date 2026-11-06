@@ -176,3 +176,21 @@ export const waiting = () =>
       </main>
     `,
   )
+
+export const locked = (signInHref: string, signedInAs?: string) =>
+  layout(
+    "Sign in to open your report · Brickline",
+    html`
+      <main class="page">
+        <span class="eyebrow">Paid report</span>
+        <h1 class="serif" style="margin-top:16px">Sign in to open your report</h1>
+        <p class="lead">
+          ${signedInAs
+            ? html`You're signed in as <code>${signedInAs.slice(0, 6)}…${signedInAs.slice(-4)}</code>, which didn't pay for this report. Sign in with the email you paid with.`
+            : html`This report opens only for the person who bought it. Sign in with the email you paid with. We don't keep accounts: Till confirms it's you.`}
+        </p>
+        <a class="btn" href="${signInHref}">Sign in with Till</a>
+        <p class="note" style="margin-top:20px"><a href="/">← Back to the shop</a></p>
+      </main>
+    `,
+  )

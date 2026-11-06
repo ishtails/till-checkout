@@ -1,13 +1,14 @@
 // A separate demo app: a small data seller. Everything Till-specific is between the two markers.
-import { Hono } from "hono"
+import { Hono, type Context } from "hono"
+import { getCookie, setCookie } from "hono/cookie"
 import { rentData } from "./data"
-import { home, report, waiting } from "./pages"
+import { home, locked, report, waiting } from "./pages"
 
 const app = new Hono()
 const SHOP_URL = process.env.SHOP_URL ?? "http://localhost:3002"
 export const REPORT_PRICE = "0.10" // testnet price, low so the live demo's test-USDT faucet lasts
-const unlocked = new Set<string>()
-const unlockReport = (orderId: string) => unlocked.add(orderId)
+const paidOrders = new Set<string>()
+const PASS_COOKIE = "brickline_pass"
 
 // ---- Till: the whole integration ----
 import { Checkout } from "@till/sdk"
@@ -20,13 +21,29 @@ app.post("/buy", async c => {
 })
 app.post("/webhooks/checkout", async c => {
   const event = await checkout.verifyWebhook(c.req.raw) // throws on a bad signature
-  if (event.type === "order.paid") unlockReport(event.orderId)
+  if (event.type === "order.paid") paidOrders.add(event.orderId)
   return c.text("ok")
 })
+
+// Customers: "Sign in with Till" instead of accounts. Till returns them with a signed pass.
+app.get("/signin", async c => c.redirect(await checkout.signInUrl(SHOP_URL + (c.req.query("next") ?? "/"))))
 
 // Agents: charge per call
 app.use("/api/data", checkout.paywall({ price: "0.05", description: "Rent data, one neighbourhood" }))
 // ---- end of Till ----
+
+// A pass arrives from Till's sign-in, or with the customer coming back from paying. Keep it in a
+// cookie, then drop it from the address bar so it isn't shared with the link.
+app.use("*", async (c, next) => {
+  const pass = c.req.query("till_pass")
+  if (!pass) return next()
+  if (checkout.verifySignIn(pass)) {
+    setCookie(c, PASS_COOKIE, pass, { httpOnly: true, sameSite: "Lax", secure: SHOP_URL.startsWith("https"), path: "/", maxAge: 7 * 24 * 3600 })
+  }
+  const url = new URL(c.req.url)
+  url.searchParams.delete("till_pass")
+  return c.redirect(url.pathname + url.search)
+})
 
 // The API's answer says what each number is, so an agent can quote it without guessing.
 const forApi = (r: (typeof rentData)[number]) => ({
@@ -44,29 +61,30 @@ app.onError((err, c) => (err.message.includes("webhook signature") ? c.text("bad
 
 app.get("/", c => c.html(home(rentData)))
 
-// The webhook normally arrives first; reading the order covers a missed one, or a restart.
-async function checkPaid(orderId: string): Promise<"paid" | "open" | "unknown"> {
-  if (unlocked.has(orderId)) return "paid"
+// The report opens only for the wallet that paid for it, proven by a pass from Till.
+async function access(c: Context, orderId: string) {
   const order = orderId ? await checkout.getOrder(orderId).catch(() => undefined) : undefined
-  if (!order) return "unknown"
-  if (order.status === "open") return "open"
-  unlockReport(orderId)
-  return "paid"
+  if (!order) return { state: "unknown" as const }
+  if (order.status === "open" && !paidOrders.has(orderId)) return { state: "open" as const }
+  const pass = getCookie(c, PASS_COOKIE)
+  if (await checkout.paidBy(orderId, pass)) return { state: "yours" as const }
+  return { state: "locked" as const, signedInAs: checkout.verifySignIn(pass)?.wallet }
 }
 
 app.get("/thanks", async c => {
   const orderId = c.req.query("order") ?? ""
-  const state = await checkPaid(orderId)
-  if (state === "unknown") return c.redirect("/")
-  if (state === "paid") return c.html(report(rentData, orderId))
+  const a = await access(c, orderId)
+  if (a.state === "unknown") return c.redirect("/")
+  if (a.state === "yours") return c.html(report(rentData, orderId))
+  if (a.state === "locked") return c.html(locked(`/signin?next=${encodeURIComponent(`/thanks?order=${orderId}`)}`, a.signedInAs))
   c.header("Refresh", "3") // check again in a few seconds, until the payment lands
   return c.html(waiting())
 })
 
-// The paid report as a spreadsheet.
+// The paid report as a spreadsheet, for the same wallet only.
 app.get("/report.csv", async c => {
   const orderId = c.req.query("order") ?? ""
-  if ((await checkPaid(orderId)) !== "paid") return c.redirect("/")
+  if ((await access(c, orderId)).state !== "yours") return c.redirect(`/thanks?order=${orderId}`)
   const csv = ["area,2bhk_inr_per_month,1bhk_inr_per_month", ...rentData.map(r => `${r.area},${r.bhk2},${r.bhk1}`)].join("\n")
   c.header("Content-Type", "text/csv; charset=utf-8")
   c.header("Content-Disposition", 'attachment; filename="brickline-mumbai-rent-index-nov-2026.csv"')
