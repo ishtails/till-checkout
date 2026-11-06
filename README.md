@@ -8,7 +8,7 @@
 **Get paid by people and AI agents that can't be tricked into overpaying.**
 
 - **A checkout for small online sellers.** People pay in USDT with an email and no gas, agents pay per API call with no sign-up, and refunds take one click.
-- **A spending guard for the agent's owner.** Its limits are checked before anything is signed, and every payment and blocked attempt is a public record.
+- **A spending guard for the agent's owner.** Its limits hold whoever is talking to it: a web page, the model, or Till itself. Unusual payments wait for the owner's OK, and every payment and block is a public record.
 
 [**Try it live**](https://till.ishtails.xyz) · Demo video *(link added once recorded)* · [Docs](https://till.ishtails.xyz/docs) · [Specs](design/) · Built solo at ETHGlobal Mumbai, 5–7 Nov 2026
 
@@ -25,17 +25,17 @@ So an agent's limits have to hold no matter who is talking to it. In Till, nobod
 
 Something wrong is blocked outright. Something only unusual, like a bigger payment than normal, waits for the owner's OK on their phone. Every payment, approval and block goes on a public log on Hedera, so the owner can check what the agent spent without taking anyone's word for it.
 
-For the shop, all of this is just a checkout: about 20 lines, paid in USDT by people and agents alike, with no gas for either and refunds in one click.
+For the shop, all of this is just a checkout, about 20 lines. People pay with an email and agents pay per call, both in USDT and neither holding gas. The dashboard shows which registered agent made each agent payment, and who owns it. Refunds to either take one click, and the accountant gets a CSV. The shop prepays the gas from a tank in USDT, and Till charges it at cost plus 10%, which is how Till earns.
 
 ## Try it
-Open the [demo shop](https://shop.till.ishtails.xyz), sign in with any email, get free test USDT, and buy the report ($0.10; prices are lowered for testnet). Your receipt is read from Arkiv. The agent runs on my laptop; its log is public on [HashScan](https://hashscan.io/testnet/topic/0.0.11155231).
+Open the [demo shop](https://shop.till.ishtails.xyz), sign in with any email, get free test USDT, and buy the report ($0.10; prices are lowered for testnet). Your receipt is read from Arkiv. Then look at the other sides, no sign-in needed: the shop's [dashboard](https://pay.till.ishtails.xyz/dashboard) and the agent owner's [console](https://pay.till.ishtails.xyz/agent). The agent runs on my laptop; its log is public on [HashScan](https://hashscan.io/testnet/topic/0.0.11155231).
 
 ## The demo
 1. **A person pays.** Brickline, a demo data shop, adds Till in about 20 lines. A customer buys a $0.10 report with an email and a code. No wallet app, no gas.
 2. **An agent is tricked, and the wallet isn't.** The agent follows a review page's link to a look-alike API asking $0.50 to a stranger. The guard blocks it before anything is signed: the payee isn't on its list or Brickline's address on Arkiv, and it's over the $0.30 cap.
 3. **The agent pays the real shop.** With no link, it finds Brickline in Till's registry on Arkiv and pays $0.05 in USDC on Hedera, with no human approving.
 4. **The owner is asked.** It wants the whole-city dataset, $0.25, over its $0.10 auto-pay limit. The request shows up on the owner's phone; they approve, and it pays.
-5. **The merchant refunds.** Four cents back, in one click. The customer's receipt shows it under the payment, read from Arkiv, not from the shop.
+5. **The merchant refunds.** Four cents back, in one click. The customer's receipt shows it under the payment, read from Arkiv, not from the shop. On the same dashboard, each agent payment shows the registered agent that paid, and can be refunded too.
 
 ## Proof
 
@@ -45,10 +45,12 @@ Everything above happened on testnet:
 |---|---|
 | A customer paid $5 with just an email. Till's relayer paid the gas; the customer holds no WBT | [Whitechain tx](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) |
 | The merchant refunded it in part: $2, then the other $3 | [$2](https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b) · [$3](https://explorer.testnet.whitechain.io/tx/0x21c4d4263a743b34dcef5da098dad9cade4a412c3364075f1e283021014c3419) |
+| Brickline's listing in Till's registry on Arkiv: what it sells, its prices and where it's paid | [Arkiv entity](https://rabdi.explorer.arkiv.network/entity-explorer?q=%24key%20%3D%20key(0x2b22a7b395f4d97cef1632c54ea44733bab048ee2e0aae80ec6ea0ff996efdc2)) |
 | The guard blocked the look-alike: wrong payee, not the seller's address on Arkiv, over the cap | [HCS message #26](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/26) |
 | The agent found the shop on Arkiv and paid $0.05 in USDC on Hedera, with no human approving | [HashScan tx](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515) |
 | An agent paid $0.05 in USDT on Whitechain over x402, through Till's facilitator | [Whitechain tx](https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20) |
 | The merchant refunded an agent's payment, with no gas | [Whitechain tx](https://explorer.testnet.whitechain.io/tx/0x9fb9fb96855ce195d3ed927321db56e359a16bb76b3458b32f5afa7aebfe644c) |
+| The agent is registered on ERC-8004, and the wallet it pays from signed that it's the agent's | [registration](https://hashscan.io/testnet/transaction/0x6a36a9bf4eee48da31e9140db458ce767786403879966f3a6db59281bef76a4b) · [wallet link](https://hashscan.io/testnet/transaction/0xd9fffa6824292017f84b9aa19d4fb29ed7e716ccb09d3578a30577b7d7bfd6b8) |
 | The receipt page reads the order (paid $5, refunded $2 and $3) from Arkiv | [Arkiv explorer](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20order_id%20%3D%20str('0x1b44530319fbffb44ec51e0cec380d6bb019806795a05c064ba28d412a40f0b4')%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)) |
 
 ## How it works
@@ -94,6 +96,9 @@ The full reference, including Sign in with Till and webhooks, is at [till.ishtai
 **In short:** a verified Checkout contract, gasless USDT payments in the main flow, a ~20-line integration, merchant and customer views, refunds for people and agents, an accountant's export, and a gas tank the merchant prepays. What it was like to build: [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md).
 
 - Checkout contract (verified): [`0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6`](https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6)
+- Both views, live: the merchant's [dashboard](https://pay.till.ishtails.xyz/dashboard) (orders, refunds, agent payments, the gas tank, the CSV) and the customer's checkout, receipt and [Your receipts](https://pay.till.ishtails.xyz/receipts) pages
+- No crypto steps for the payer: sign in with an email or Google, enter the code, Pay. No wallet app, no network to pick, no gas
+- After the payment, for the shop's own systems: signed `order.paid` and `order.refunded` webhooks, and Sign in with Till, so the shop knows which customer paid without running accounts
 - Customer's gasless USDT payment: [`0x4646…7316`](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) ($5 from an email wallet, sent by Till's relayer). The first one, by script: [`0x93f3…6ab3`](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)
 - Refund in one click from the dashboard: [`0x911c…c8ca`](https://explorer.testnet.whitechain.io/tx/0x911cf211e623c0c19a77fe75b10560f97344512f657f5f14abc6dcb03377c8ca) (all $5 of the order paid in [`0xfcc7…e83f`](https://explorer.testnet.whitechain.io/tx/0xfcc75268a2195658d98bef7cfb4a43b8d27aa9bffe36ac2f18e4f862dabae83f)). The merchant signs; the relayer pays the gas; the contract won't refund more than was paid
 - Partial refunds: [$2](https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b), then [the other $3](https://explorer.testnet.whitechain.io/tx/0x21c4d4263a743b34dcef5da098dad9cade4a412c3364075f1e283021014c3419), of a $5 order paid in [`0x05dd…b76a`](https://explorer.testnet.whitechain.io/tx/0x05dd3b8e645f109c5faed70d6722b44fd4b2b6e5c0d6a84be6ffd9df57c4b76a)
@@ -117,7 +122,7 @@ The full reference, including Sign in with Till and webhooks, is at [till.ishtai
 7. It holds at most about 0.3 WBT.
 
 ## Hedera
-**In short:** an agent that pays on its own over x402, inside limits it can't be talked out of, with every payment, approval and block on a public HCS log. It settles in USDC through Till's own facilitator, and its identity is on ERC-8004.
+**In short:** an agent that finds a seller and pays it on its own over x402, inside limits it can't be talked out of, with every payment, approval and block on a public HCS log. It settles in USDC, an HTS token, through Till's own facilitator, and its identity is on ERC-8004.
 
 - x402 endpoint: `GET /api/data` on the demo shop. Its 402 offers USDT on Whitechain and USDC on Hedera.
 - A settled payment: [`0.0.11155223@1793960375.693637515`](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515) ($0.05 to the merchant `0.0.11155222`; the fee payer `0.0.11155223` paid the 0.016 HBAR fee, the agent paid none)
