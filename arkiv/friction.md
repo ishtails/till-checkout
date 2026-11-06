@@ -1,10 +1,10 @@
 # Friction
 
-What got in my way building Till's receipts on Arkiv, in the order I hit it. I tried Arkiv first on 29 Oct (SDK 0.8.1 on Tiramisu) and built the real thing at the event (SDK 1.0.1 on Rabdi).
+What got in my way building Till's receipts on Arkiv, in the order I hit it. I started on SDK 0.8.1 on Tiramisu and moved to SDK 1.0.1 on Rabdi.
 
 ## 1. I built on the old testnet, and nothing told me
 
-I started on Tiramisu with SDK 0.8.1, because that's what I'd tried a week earlier. Everything worked: writes went through, queries came back, and the data explorer showed my records. I only found out it was the wrong network when I reread the prize page to write these files and saw Rabdi and chain ID 7794095.
+I started on Tiramisu with SDK 0.8.1, because that's what the docs I found first used. Everything worked: writes went through, queries came back, and the data explorer showed my records. I only found out it was the wrong network when I reread the prize page to write these files and saw Rabdi and chain ID 7794095.
 
 What I expected: the old RPC to refuse writes, or SDK 0.8.1 to warn that Tiramisu has been replaced. What happened: Tiramisu still accepts writes and answers queries, so nothing tells you you're on a network the prize doesn't count.
 

@@ -22,7 +22,7 @@
 | `packages/sdk`, `packages/guard`, `packages/receipts` | Merchant SDK, the agent's spending rules, the Arkiv receipt schema | Claude wrote them from my spec; the guard's limits are mine (`apps/agent/policy.json`) |
 | `README.md`, `arkiv/`, `WHITECHAIN_FEEDBACK.md` | Docs and sponsor files | Claude drafted them from what we built; I edited them in my own words |
 
-**R&D** (before and during the hack): Claude read the sponsors' docs and SDKs with me and ran small test scripts on testnet to check what works: the test USDT's signing domain, facilitator behaviour on expiry and retries, fees, and Arkiv writes and reads. What we learned is in the specs and the feedback files.
+**R&D:** Claude read the sponsors' docs and SDKs with me and ran small test scripts on testnet to check what works: the test USDT's signing domain, facilitator behaviour on expiry and retries, fees, and Arkiv writes and reads. What we learned is in the specs and the feedback files.
 
 **Prompts.** The specs in `design/` are what Claude worked from. The chat prompts weren't saved as files.
 

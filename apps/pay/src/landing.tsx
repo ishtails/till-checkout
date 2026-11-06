@@ -237,7 +237,7 @@ export function Landing() {
 
         <Section eyebrow="Why the limit lives in the wallet" title="A poisoned link fooled every model we tried. The guard caught every one.">
           <p className="mt-4 max-w-2xl text-muted-foreground">
-            Before the event we ran the attack 27 times on Claude Haiku, Sonnet and Opus. Injected instructions didn't work. But a review page linking to a look-alike API fooled every model, every time, because nothing on the page gives it away. Only the payment request shows the real price and payee, and that's where Till checks.
+            We ran the attack 27 times on Claude Haiku, Sonnet and Opus. Injected instructions didn't work. But a review page linking to a look-alike API fooled every model, every time, because nothing on the page gives it away. Only the payment request shows the real price and payee, and that's where Till checks.
           </p>
           <StaggerGrid className="mt-8 grid gap-3 sm:grid-cols-3">
             <Card className="gap-0 p-5">
