@@ -9,6 +9,7 @@ import { api, type AgentInfo, type Approval } from "./api"
 import { Input } from "./components/ui/input"
 import { entityExplorer, registry, type ListingRecord } from "./arkiv"
 import { readAgent, RESEARCH_AGENT_ID, type AgentIdentity } from "@till/identity"
+import { AccountMenu } from "./account-menu"
 import { friendly } from "./lib/errors"
 import { Badge, Button, Card, Logo, Muted, RecordLink } from "./ui"
 
@@ -229,19 +230,13 @@ export function AgentConsole() {
             <span className="hidden text-sm text-muted-foreground sm:inline">Agent console</span>
           </div>
           {!ready ? null : authenticated ? (
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <div className="flex flex-col items-end leading-tight">
-                {email && <span className="max-w-[45vw] truncate text-foreground">{email}</span>}
-                {address && (
-                  <span className="font-mono">
-                    {short(address)} · <span className={isOwner ? "font-medium text-brand" : "text-destructive"}>{isOwner ? "owner" : "not the owner"}</span>
-                  </span>
-                )}
-              </div>
-              <Button variant="outline" size="sm" onClick={switchAccount}>
-                Switch account
-              </Button>
-            </div>
+            <AccountMenu
+              email={email}
+              address={address}
+              role={info ? (isOwner ? { label: "Owner of this agent", ok: true } : { label: `Not the owner (owner is ${short(info.owner ?? "")})`, ok: false }) : undefined}
+              onSwitch={switchAccount}
+              onSignOut={() => void logout()}
+            />
           ) : (
             <Button size="sm" onClick={login}>
               Owner sign in

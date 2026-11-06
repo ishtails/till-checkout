@@ -19,6 +19,7 @@ import {
 import { Input } from "./components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./components/ui/table"
 import { download, ledgerCsv } from "./csv"
+import { AccountMenu } from "./account-menu"
 import { friendly } from "./lib/errors"
 import { Badge, Button, Card, Logo, Muted, RecordLink } from "./ui"
 
@@ -222,20 +223,13 @@ export function Dashboard() {
             <span className="hidden text-sm text-muted-foreground sm:inline">Merchant dashboard</span>
           </div>
           {!ready ? null : authenticated ? (
-            <div className="flex items-center gap-3 text-right text-xs text-muted-foreground">
-              <div className="hidden sm:block">
-                <p className="text-foreground">{user?.email?.address ?? user?.google?.email}</p>
-                {address && (
-                  <p className="font-mono">
-                    {short(address)}
-                    {balance !== undefined && <> · {balance.toFixed(2)} USDT</>}
-                  </p>
-                )}
-              </div>
-              <Button variant="outline" size="sm" onClick={switchAccount}>
-                Switch account
-              </Button>
-            </div>
+            <AccountMenu
+              email={user?.email?.address ?? user?.google?.email}
+              address={address}
+              details={balance !== undefined && <>{balance.toFixed(2)} USDT</>}
+              onSwitch={switchAccount}
+              onSignOut={() => void logout()}
+            />
           ) : (
             <Button size="sm" onClick={login}>
               Merchant sign in
