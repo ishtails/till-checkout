@@ -11,7 +11,9 @@ import {
   ShieldCheckIcon,
   StorefrontIcon,
 } from "@phosphor-icons/react"
-import type { ReactNode } from "react"
+import { motion } from "motion/react"
+import { Children, type ReactNode } from "react"
+import { FADE_IN_VARIANTS, MotionReveal, SPRING_TOKENS, STAGGER_CONTAINER_VARIANTS, STAGGER_ITEM_VARIANTS, useMotionConfig } from "./lib/motion"
 import { Badge, Button, Card, RecordLink } from "./ui"
 
 const SHOP = import.meta.env.VITE_SHOP_URL ?? "http://localhost:3002"
@@ -35,11 +37,51 @@ app.post("/webhooks/checkout", async c => {
 // Agents: charge per call
 app.use("/api/data", checkout.paywall({ price: "0.05" }))`
 
+/** Fades its content up once it scrolls into view. */
+function Reveal({ children, className, delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+  const { resolveTransition, resolveVariants } = useMotionConfig()
+  return (
+    <motion.div
+      className={className}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-60px" }}
+      variants={resolveVariants(FADE_IN_VARIANTS)}
+      transition={{ ...resolveTransition("smooth"), delay }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+/** A grid whose children come in one after another once it scrolls into view. */
+function StaggerGrid({ children, className }: { children: ReactNode; className?: string }) {
+  const { resolveTransition, resolveVariants } = useMotionConfig()
+  return (
+    <motion.div
+      className={className}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-60px" }}
+      variants={resolveVariants(STAGGER_CONTAINER_VARIANTS)}
+      custom={0.09}
+    >
+      {Children.map(children, child => (
+        <motion.div variants={resolveVariants(STAGGER_ITEM_VARIANTS)} transition={resolveTransition("smooth")}>
+          {child}
+        </motion.div>
+      ))}
+    </motion.div>
+  )
+}
+
 function Section({ id, eyebrow, title, children }: { id?: string; eyebrow: string; title: string; children: ReactNode }) {
   return (
     <section id={id} className="border-t py-16 sm:py-20">
-      <Badge variant="paid">{eyebrow}</Badge>
-      <h2 className="mt-3 max-w-2xl text-3xl sm:text-4xl">{title}</h2>
+      <Reveal>
+        <Badge variant="paid">{eyebrow}</Badge>
+        <h2 className="mt-3 max-w-2xl text-3xl text-balance sm:text-4xl">{title}</h2>
+      </Reveal>
       {children}
     </section>
   )
@@ -64,6 +106,7 @@ const proof: [string, string, string][] = [
 ]
 
 export function Landing() {
+  const { reduced } = useMotionConfig()
   return (
     <div className="min-h-svh">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
@@ -84,16 +127,18 @@ export function Landing() {
 
       <main className="mx-auto max-w-5xl px-5">
         <div className="pt-14 pb-10 sm:pt-24">
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both">
+          <MotionReveal preset="soft">
             <Badge variant="neutral">Built at ETHGlobal Mumbai · live on testnet</Badge>
-          </div>
-          <h1 className="mt-5 max-w-3xl text-4xl leading-[1.05] text-balance animate-in fade-in slide-in-from-bottom-4 delay-100 duration-700 fill-mode-both sm:text-6xl">
-            Get paid by people and AI agents that can't be tricked into overpaying.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-pretty text-muted-foreground animate-in fade-in slide-in-from-bottom-4 delay-200 duration-700 fill-mode-both">
-            Till is a checkout a shop adds in about 20 lines. People pay in USDT with just an email and no gas. AI agents pay per API call, inside limits they can't be talked out of. Refunds take one click.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3 animate-in fade-in slide-in-from-bottom-4 delay-300 duration-700 fill-mode-both">
+          </MotionReveal>
+          <MotionReveal preset="soft" delay={0.1}>
+            <h1 className="mt-5 max-w-3xl text-4xl leading-[1.05] text-balance sm:text-6xl">Get paid by people and AI agents that can't be tricked into overpaying.</h1>
+          </MotionReveal>
+          <MotionReveal preset="soft" delay={0.2}>
+            <p className="mt-6 max-w-2xl text-lg text-pretty text-muted-foreground">
+              Till is a checkout a shop adds in about 20 lines. People pay in USDT with just an email and no gas. AI agents pay per API call, inside limits they can't be talked out of. Refunds take one click.
+            </p>
+          </MotionReveal>
+          <MotionReveal preset="soft" delay={0.3} className="mt-8 flex flex-wrap items-center gap-3">
             <Button variant="brand" size="lg" onClick={() => (location.href = SHOP)}>
               See the demo
               <ArrowRightIcon />
@@ -102,14 +147,19 @@ export function Landing() {
               <GithubLogoIcon />
               Read the code
             </Button>
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground animate-in fade-in delay-300 duration-700 fill-mode-both">
-            The demo shop sells a $0.10 report. Sign in with any email and you get free test USDT to buy it.
-          </p>
+          </MotionReveal>
+          <MotionReveal preset="soft" delay={0.35}>
+            <p className="mt-4 text-sm text-muted-foreground">The demo shop sells a $0.10 report. Sign in with any email and you get free test USDT to buy it.</p>
+          </MotionReveal>
         </div>
 
         {/* The product at a glance: what a customer sees, and what the agent's guard does. */}
-        <div className="mb-16 grid gap-4 rounded-3xl bg-secondary/60 p-4 ring-1 ring-foreground/5 animate-in fade-in slide-in-from-bottom-8 delay-500 duration-1000 fill-mode-both sm:mb-24 sm:p-8 md:grid-cols-2">
+        <motion.div
+          initial={reduced ? false : { opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={reduced ? { duration: 0 } : { ...SPRING_TOKENS.smoothHeavy, delay: 0.5 }}
+          className="mb-16 grid gap-4 rounded-3xl bg-secondary/60 p-4 ring-1 ring-foreground/5 sm:mb-24 sm:p-8 md:grid-cols-2"
+        >
           <Card className="gap-0 p-6">
             <p className="text-sm text-muted-foreground">Mumbai Rent Data</p>
             <p className="mt-1 text-lg font-medium">Mumbai rent report</p>
@@ -143,10 +193,10 @@ export function Landing() {
             </p>
             <p className="mt-4 text-primary-foreground/40"># both are on the public log (HCS)</p>
           </div>
-        </div>
+        </motion.div>
 
         <Section eyebrow="Two halves" title="A checkout for the shop, and a spending guard for the agent.">
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <StaggerGrid className="mt-8 grid gap-4 sm:grid-cols-2">
             <Card className="gap-0 p-6">
               <StorefrontIcon className="size-6 text-brand" weight="duotone" />
               <p className="mt-4 text-lg font-medium">For merchants: the checkout</p>
@@ -181,14 +231,14 @@ export function Landing() {
                 ))}
               </ul>
             </Card>
-          </div>
+          </StaggerGrid>
         </Section>
 
         <Section eyebrow="Why the limit lives in the wallet" title="A poisoned link fooled every model we tried. The guard caught every one.">
           <p className="mt-4 max-w-2xl text-muted-foreground">
             Before the event we ran the attack 27 times on Claude Haiku, Sonnet and Opus. Injected instructions didn't work. But a review page linking to a look-alike API fooled every model, every time, because nothing on the page gives it away. Only the payment request shows the real price and payee, and that's where Till checks.
           </p>
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <StaggerGrid className="mt-8 grid gap-3 sm:grid-cols-3">
             <Card className="gap-0 p-5">
               <RobotIcon className="size-5 text-muted-foreground" />
               <p className="mt-3 text-sm">The agent follows a review page's link to what looks like the shop's API.</p>
@@ -203,11 +253,11 @@ export function Landing() {
               <CheckCircleIcon className="size-5 text-brand" weight="fill" />
               <p className="mt-3 text-sm">Pointed at the real shop, the agent pays $0.05 in USDC on Hedera, with no human approving.</p>
             </Card>
-          </div>
+          </StaggerGrid>
         </Section>
 
         <Section eyebrow="For developers" title="About 20 lines in the shop's own server.">
-          <div className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_1.4fr]">
+          <Reveal className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_1.4fr]">
             <div className="space-y-4 text-muted-foreground">
               <p>Create an order and redirect to Till's hosted checkout. Unlock what was bought when the signed webhook arrives.</p>
               <p>One more line puts an API behind x402, so agents can pay per call with no sign-up.</p>
@@ -218,11 +268,11 @@ export function Landing() {
             <pre className="overflow-x-auto rounded-xl bg-primary p-5 text-[12.5px] leading-relaxed text-primary-foreground/90">
               <code>{integration}</code>
             </pre>
-          </div>
+          </Reveal>
         </Section>
 
         <Section eyebrow="Built on" title="Each chain does one job. The merchant never sees any of it.">
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <StaggerGrid className="mt-8 grid gap-4 sm:grid-cols-3">
             <Feature icon={<EnvelopeSimpleIcon />} title="Whitechain: the money">
               USDT payments with no gas for the payer, through our relayer and a small verified contract that caps refunds at what was paid.
             </Feature>
@@ -232,10 +282,11 @@ export function Landing() {
             <Feature icon={<DatabaseIcon />} title="Arkiv: the receipts">
               Every receipt is saved on Arkiv. The receipt page reads it from there, so it doesn't depend on the shop, or on us.
             </Feature>
-          </div>
+          </StaggerGrid>
         </Section>
 
         <Section eyebrow="Proof" title="Everything above happened on testnet. Click any of it.">
+          <Reveal>
           <Card className="mt-8 gap-0 py-0">
             <ul>
               {proof.map(([what, href, where]) => (
@@ -249,6 +300,7 @@ export function Landing() {
               ))}
             </ul>
           </Card>
+          </Reveal>
         </Section>
 
         <section className="border-t py-16 text-center sm:py-24">
