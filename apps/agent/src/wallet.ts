@@ -1,11 +1,13 @@
-// The agent's "wallet": an MCP server with two tools, read_page and buy_data. It holds the keys,
-// the x402 client, the spending guard and the HCS log. The model only sees the tool results.
+// The agent's "wallet": an MCP server with three tools, find_sellers, read_page and buy_data. It
+// holds the keys, the x402 client, the spending guard and the HCS log. The model only sees the
+// tool results. Sellers come from Till's registry on Arkiv, and every payment's payee is checked
+// against the seller's record there before anything is signed.
 // stdout is the MCP channel, so all logging goes to stderr.
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { guard, type Approver, type Decision, type Policy } from "@till/guard"
+import { guard, registryView, type Approver, type Decision, type Policy } from "@till/guard"
 import { x402Client } from "@x402/core/client"
 import { toClientEvmSigner } from "@x402/evm"
 import { ExactEvmScheme } from "@x402/evm/exact/client"
@@ -16,6 +18,7 @@ import type { Hex } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { z } from "zod"
 import { logDecision, topicUrl } from "./hcs"
+import { lookupMerchants } from "./registry"
 
 const AGENT = "research-agent"
 const NETWORK = (process.env.NETWORK ?? "hedera:testnet") as `${string}:${string}`
@@ -70,11 +73,15 @@ const approver: Approver | undefined = process.env.AGENT_TOKEN
 // The guard's decision for the call in progress (the agent makes one call at a time).
 let last: { decision: Decision; seq?: string } | undefined
 let approvedBy: string | undefined
+// Who the agent says it's paying on the call in progress (buy_data's `seller`).
+let seller: string | undefined
 const decision = () => last
 guard(client, {
   policy,
   stateFile: resolve(root, "data/agent-state.json"),
   approver,
+  // Read from Arkiv on every payment, so a change to the registry applies at once.
+  registry: async req => registryView(await lookupMerchants(), req, seller),
   onDecision: async decision => {
     if (decision.type === "agent.approved") approvedBy = decision.by
     last = { decision, seq: await logDecision(AGENT, decision) }
@@ -99,6 +106,33 @@ const logged = () => (decision()?.seq ? ` Logged publicly as message #${decision
 const server = new McpServer({ name: "wallet", version: "0.1.0" })
 
 server.registerTool(
+  "find_sellers",
+  {
+    description:
+      "Find data sellers in Till's public registry on Arkiv. Returns each seller's name, its paid API endpoints with prices, and its registry entry. Use these endpoints with buy_data, and pass the seller's name.",
+    inputSchema: { category: z.string().optional().describe('Kind of data, e.g. "rent-data". Leave out to list every seller.') },
+  },
+  async ({ category }) => {
+    try {
+      const sellers = await lookupMerchants(category)
+      if (sellers.length === 0) return text(`No sellers listed on Arkiv${category ? ` for "${category}"` : ""}.`)
+      return text(
+        sellers
+          .map(
+            s =>
+              `${s.name} (${s.category}), ${s.siteUrl}\n` +
+              s.endpoints.map(e => `  $${e.priceUsd} per call: ${e.method} ${e.url} (${e.description})`).join("\n") +
+              `\n  Registry entry: ${s.explorerUrl}`,
+          )
+          .join("\n\n"),
+      )
+    } catch (err) {
+      return text(`Couldn't read the registry on Arkiv: ${(err as Error).message}`)
+    }
+  },
+)
+
+server.registerTool(
   "read_page",
   { description: "Fetch a web page and return its text.", inputSchema: { url: z.string().describe("Full URL of the page") } },
   async ({ url }) => {
@@ -115,11 +149,15 @@ server.registerTool(
   "buy_data",
   {
     description: `Call a paid data API. If the API asks for payment (HTTP 402), your wallet pays it automatically in ${asset}, within your spending limits, and the data is returned.`,
-    inputSchema: { url: z.string().describe("Full URL of the paid API endpoint, with any query string") },
+    inputSchema: {
+      url: z.string().describe("Full URL of the paid API endpoint, with any query string"),
+      seller: z.string().describe("Name of the seller you believe runs this API, as find_sellers or the page you read names it"),
+    },
   },
-  async ({ url }) => {
+  async ({ url, seller: name }) => {
     last = undefined
     approvedBy = undefined
+    seller = name
     try {
       const res = await paidFetch(url)
       const body = await res.text()
