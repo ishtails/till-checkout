@@ -1,13 +1,30 @@
 import { usePrivy, useSignTypedData, useWallets } from "@privy-io/react-auth"
+import { DownloadSimpleIcon, GasPumpIcon, RobotIcon, ShoppingBagIcon } from "@phosphor-icons/react"
 import { useEffect, useState } from "react"
 import type { Address, Hex } from "viem"
 import { parseUnits } from "viem"
 import { agentExplorerTx, api, explorerTx, usdtBalance, type AgentPayment, type GasMeter, type Order } from "./api"
 import { receiveTypes } from "./checkout"
+import { Input } from "./components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./components/ui/table"
 import { download, ledgerCsv } from "./csv"
+import { Badge, Button, Card, Logo, Muted, RecordLink } from "./ui"
 
 const USDT = "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
 const short = (s: string) => `${s.slice(0, 6)}…${s.slice(-4)}`
+
+function Stat({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: string; note: string }) {
+  return (
+    <Card className="gap-0 p-5">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="flex size-6 items-center justify-center rounded-md bg-secondary text-secondary-foreground [&_svg]:size-3.5">{icon}</span>
+        {label}
+      </div>
+      <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">{value}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{note}</p>
+    </Card>
+  )
+}
 
 // The merchant's view (no login of its own in this demo; see the README). A refund needs the
 // merchant's signature, so the Refund button works only for the wallet the order was paid to.
@@ -84,149 +101,176 @@ export function Dashboard() {
     }
   }
 
+  const received = orders?.reduce((a, o) => a + Number(o.amount) - Number(o.refunded), 0) ?? 0
+  const agentTotal = agentPayments?.reduce((a, p) => a + Number(p.amount) / 1e6, 0) ?? 0
+
   return (
-    <main className="mx-auto mt-12 max-w-3xl px-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-baseline gap-4">
-          <h1 className="text-xl font-semibold">Orders</h1>
-          <button
-            className="text-sm text-emerald-700 underline disabled:opacity-50"
+    <div className="min-h-svh">
+      <header className="border-b bg-card">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Logo />
+            <span className="hidden text-sm text-muted-foreground sm:inline">Merchant dashboard</span>
+          </div>
+          {!ready ? null : authenticated ? (
+            <div className="flex items-center gap-3 text-right text-xs text-muted-foreground">
+              <div className="hidden sm:block">
+                <p className="text-foreground">{user?.email?.address ?? user?.google?.email}</p>
+                {address && (
+                  <p className="font-mono">
+                    {short(address)}
+                    {balance !== undefined && <> · {balance.toFixed(2)} USDT</>}
+                  </p>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={logout}>
+                Log out
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" onClick={login}>
+              Merchant sign in
+            </Button>
+          )}
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-4 py-8">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Stat icon={<ShoppingBagIcon weight="fill" />} label="Received from customers" value={`$${received.toFixed(2)}`} note={`${orders?.length ?? 0} orders, after refunds`} />
+          <Stat icon={<RobotIcon weight="fill" />} label="Paid by AI agents" value={`$${agentTotal.toFixed(2)}`} note={`${agentPayments?.length ?? 0} API calls over x402`} />
+          <Stat
+            icon={<GasPumpIcon weight="fill" />}
+            label="Gas we paid for you"
+            value={gas ? `${Number(gas.totalWbt).toFixed(4)} WBT` : "…"}
+            note={gas ? `About ${Number(gas.perTxWbt).toFixed(5)} WBT a transaction. Your customers and agents paid none.` : ""}
+          />
+        </div>
+
+        {error && <p className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+
+        <div className="mt-10 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-lg">Orders</h2>
+            <Muted>Paid by people at checkout. Refund any amount up to what's left.</Muted>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
             disabled={!orders || !agentPayments}
             onClick={() => download(`till-${merchantId}-${new Date().toISOString().slice(0, 10)}.csv`, ledgerCsv(orders!, agentPayments!))}
           >
-            Download CSV
-          </button>
+            <DownloadSimpleIcon />
+            CSV for your accountant
+          </Button>
         </div>
-        {!ready ? null : authenticated ? (
-          <div className="text-right text-sm text-stone-600">
-            <p>
-              {user?.email?.address} · <button className="underline" onClick={logout}>Log out</button>
-            </p>
-            {address && (
-              <p className="font-mono text-xs">
-                {address}
-                {balance !== undefined && <> · {balance.toFixed(2)} USDT</>}
-              </p>
-            )}
-          </div>
-        ) : (
-          <button className="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white" onClick={login}>
-            Merchant sign in
-          </button>
-        )}
-      </div>
-      {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
-
-      {gas && (
-        <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-xs text-stone-500">Gas we paid for you on Whitechain</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{Number(gas.totalWbt).toFixed(4)} WBT</p>
-          <p className="mt-1 text-sm text-stone-600">
-            {gas.payments.count} payments, {gas.refunds.count} refunds and {gas.agentPayments.count} agent payments, about{" "}
-            {Number(gas.perTxWbt).toFixed(5)} WBT each. Your customers and agents paid none.
-          </p>
-        </div>
-      )}
-
-      <div className="mt-6 rounded-2xl border border-stone-200 bg-white shadow-sm">
-        {!orders ? (
-          <p className="p-6 text-stone-500">Loading…</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs text-stone-500">
-              <tr>
-                <th className="px-4 py-3 font-normal">Order</th>
-                <th className="px-4 py-3 font-normal">Customer</th>
-                <th className="px-4 py-3 text-right font-normal">Amount</th>
-                <th className="px-4 py-3 font-normal">Status</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map(o => {
-                const refunded = Number(o.refunded)
-                return (
-                  <tr key={o.id} className="border-t border-stone-100">
-                    <td className="px-4 py-3">
-                      <a className="underline" href={`/receipt/${o.id}`}>{o.description}</a>
-                      <p className="text-xs text-stone-400">{new Date(o.createdAt * 1000).toLocaleString()}</p>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs">{o.payer ? short(o.payer) : "–"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      ${Number(o.amount).toFixed(2)}
-                      {refunded > 0 && o.status !== "refunded" && <p className="text-xs text-amber-700">${refunded.toFixed(2)} refunded</p>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <a className="text-emerald-700 underline" href={explorerTx(o.refunds.at(-1)?.tx ?? o.payTx!)} target="_blank" rel="noreferrer">
-                        {o.status === "refunded" ? "Refunded" : refunded > 0 ? "Partly refunded" : "Paid"} ↗
-                      </a>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {/* Only the wallet that was paid can sign the refund. */}
-                      {o.status === "paid" && address && o.paidTo?.toLowerCase() === address.toLowerCase() && (
-                        <div className="flex items-center justify-end gap-2">
-                          <span className="text-stone-400">$</span>
-                          <input
-                            className="w-16 rounded-lg border border-stone-300 px-2 py-1 text-right tabular-nums"
-                            inputMode="decimal"
-                            placeholder={(Number(o.amount) - refunded).toFixed(2)}
-                            value={amounts[o.id] ?? ""}
-                            onChange={e => setAmounts(a => ({ ...a, [o.id]: e.target.value }))}
-                          />
-                          <button
-                            className="rounded-lg border border-stone-300 px-3 py-1 disabled:opacity-50"
-                            disabled={busy !== undefined}
-                            onClick={() => refund(o)}
-                          >
-                            {busy === o.id ? "Refunding…" : "Refund"}
-                          </button>
+        <Card className="mt-4 gap-0 py-0">
+          {!orders ? (
+            <Muted className="p-6">Loading…</Muted>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="px-4 text-xs font-normal text-muted-foreground">Order</TableHead>
+                  <TableHead className="px-4 text-xs font-normal text-muted-foreground">Customer</TableHead>
+                  <TableHead className="px-4 text-right text-xs font-normal text-muted-foreground">Amount</TableHead>
+                  <TableHead className="px-4 text-xs font-normal text-muted-foreground">Status</TableHead>
+                  <TableHead className="px-4" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map(o => {
+                  const refunded = Number(o.refunded)
+                  const status = o.status === "refunded" ? "Refunded" : refunded > 0 ? "Partly refunded" : "Paid"
+                  return (
+                    <TableRow key={o.id}>
+                      <TableCell className="px-4 py-3">
+                        <a className="font-medium hover:underline" href={`/receipt/${o.id}`}>
+                          {o.description}
+                        </a>
+                        <p className="text-xs text-muted-foreground">{new Date(o.createdAt * 1000).toLocaleString()}</p>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 font-mono text-xs text-muted-foreground">{o.payer ? short(o.payer) : "–"}</TableCell>
+                      <TableCell className="px-4 py-3 text-right tabular-nums">
+                        ${Number(o.amount).toFixed(2)}
+                        {refunded > 0 && o.status !== "refunded" && <p className="text-xs text-warning-foreground">−${refunded.toFixed(2)}</p>}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        <div className="flex flex-col items-start gap-1">
+                          <Badge variant={status === "Paid" ? "paid" : "refunded"}>{status}</Badge>
+                          <RecordLink href={explorerTx(o.refunds.at(-1)?.tx ?? o.payTx!)}>Explorer</RecordLink>
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right">
+                        {/* Only the wallet that was paid can sign the refund. */}
+                        {o.status === "paid" && address && o.paidTo?.toLowerCase() === address.toLowerCase() && (
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="relative">
+                              <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                              <Input
+                                className="h-8 w-20 pl-5 text-right tabular-nums"
+                                inputMode="decimal"
+                                placeholder={(Number(o.amount) - refunded).toFixed(2)}
+                                value={amounts[o.id] ?? ""}
+                                onChange={e => setAmounts(a => ({ ...a, [o.id]: e.target.value }))}
+                              />
+                            </div>
+                            <Button variant="outline" size="sm" isLoading={busy === o.id} disabled={busy !== undefined} onClick={() => refund(o)}>
+                              Refund
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
 
-      <h2 className="mt-10 text-xl font-semibold">Agent payments</h2>
-      <p className="mt-1 text-sm text-stone-500">Paid per API call over x402, straight to your wallet. These are final, so they can't be refunded.</p>
-      <div className="mt-4 rounded-2xl border border-stone-200 bg-white shadow-sm">
-        {!agentPayments ? (
-          <p className="p-6 text-stone-500">Loading…</p>
-        ) : agentPayments.length === 0 ? (
-          <p className="p-6 text-stone-500">No agent payments yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs text-stone-500">
-              <tr>
-                <th className="px-4 py-3 font-normal">When</th>
-                <th className="px-4 py-3 font-normal">Agent</th>
-                <th className="px-4 py-3 font-normal">Paid in</th>
-                <th className="px-4 py-3 text-right font-normal">Amount</th>
-                <th className="px-4 py-3 font-normal">Record</th>
-              </tr>
-            </thead>
-            <tbody>
-              {agentPayments.map(p => (
-                <tr key={p.transaction} className="border-t border-stone-100">
-                  <td className="px-4 py-3 text-xs text-stone-500">{new Date(p.ts).toLocaleString()}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{p.payer.startsWith("0x") ? short(p.payer) : p.payer}</td>
-                  <td className="px-4 py-3">{p.network.startsWith("hedera") ? "USDC on Hedera" : "USDT on Whitechain"}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">${(Number(p.amount) / 1e6).toFixed(2)}</td>
-                  <td className="px-4 py-3">
-                    <a className="text-emerald-700 underline" href={agentExplorerTx(p)} target="_blank" rel="noreferrer">
-                      {p.network.startsWith("hedera") ? "HashScan" : "Explorer"} ↗
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </main>
+        <div className="mt-10">
+          <h2 className="text-lg">Agent payments</h2>
+          <Muted>Paid per API call over x402, straight to your wallet. These are final, so they can't be refunded.</Muted>
+        </div>
+        <Card className="mt-4 gap-0 py-0">
+          {!agentPayments ? (
+            <Muted className="p-6">Loading…</Muted>
+          ) : agentPayments.length === 0 ? (
+            <Muted className="p-6">No agent payments yet.</Muted>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="px-4 text-xs font-normal text-muted-foreground">When</TableHead>
+                  <TableHead className="px-4 text-xs font-normal text-muted-foreground">Agent</TableHead>
+                  <TableHead className="px-4 text-xs font-normal text-muted-foreground">Paid in</TableHead>
+                  <TableHead className="px-4 text-right text-xs font-normal text-muted-foreground">Amount</TableHead>
+                  <TableHead className="px-4 text-xs font-normal text-muted-foreground">Record</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {agentPayments.map(p => {
+                  const hedera = p.network.startsWith("hedera")
+                  return (
+                    <TableRow key={p.transaction}>
+                      <TableCell className="px-4 py-3 text-xs text-muted-foreground">{new Date(p.ts).toLocaleString()}</TableCell>
+                      <TableCell className="px-4 py-3 font-mono text-xs">{p.payer.startsWith("0x") ? short(p.payer) : p.payer}</TableCell>
+                      <TableCell className="px-4 py-3">
+                        <Badge variant="neutral">{hedera ? "USDC on Hedera" : "USDT on Whitechain"}</Badge>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right tabular-nums">${(Number(p.amount) / 1e6).toFixed(2)}</TableCell>
+                      <TableCell className="px-4 py-3">
+                        <RecordLink href={agentExplorerTx(p)}>{hedera ? "HashScan" : "Explorer"}</RecordLink>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
+      </main>
+    </div>
   )
 }
