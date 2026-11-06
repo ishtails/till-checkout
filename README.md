@@ -181,9 +181,12 @@ git clone --recurse-submodules https://github.com/ishtails/till-checkout && cd t
 bun install
 cp .env.example .env                    # fill in keys; see the comments in the file
 cp merchants.example.json merchants.json # one merchant: API key, webhook secret, payout addresses
+(cd contracts && forge test)            # the Checkout contract's 13 tests
 ```
 
-Run each in its own terminal:
+The required keys are the relayer's (a Whitechain key with a little WBT), the Hedera fee payer's, the Privy app ID, and the merchant's payout addresses in `merchants.json`. The Checkout contract is already deployed; its address is filled in. Arkiv and the faucet are optional.
+
+Run each in its own terminal, the server first (the shop checks its facilitator on startup):
 
 ```bash
 bun run --cwd=apps/server start   # checkout server and relayer, :3001
@@ -191,7 +194,7 @@ bun run --cwd=apps/pay dev        # checkout, receipt and dashboard pages, :5173
 bun run --cwd=apps/shop start     # the demo shop, :3002
 ```
 
-Open http://localhost:3002 and buy the report. The customer's email wallet needs test USDT; the relayer needs a little WBT. The merchant dashboard is http://localhost:5173/dashboard.
+Open http://localhost:5173 for the landing page, or http://localhost:3002 to buy the report. The customer's email wallet needs test USDT; the relayer needs a little WBT. The merchant dashboard is http://localhost:5173/dashboard.
 
 For the agent demo, also run the attacker (`bun run --cwd=apps/attacker start`: the review page on :3004, the look-alike API on :3005), then:
 
