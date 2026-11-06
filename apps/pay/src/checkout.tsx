@@ -25,6 +25,8 @@ export function Checkout({ id }: { id: string }) {
   const [loadError, setLoadError] = useState<string>()
   const [balance, setBalance] = useState<number>()
   const [step, setStep] = useState<Step>({ kind: "ready" })
+  const [faucet, setFaucet] = useState<{ enabled: boolean; drip?: string }>()
+  const [drip, setDrip] = useState<{ kind: "idle" } | { kind: "sending" } | { kind: "sent" } | { kind: "error"; message: string }>({ kind: "idle" })
 
   const wallet = wallets.find(w => w.walletClientType === "privy")
   const address = wallet?.address as Address | undefined
@@ -35,12 +37,29 @@ export function Checkout({ id }: { id: string }) {
 
   useEffect(() => {
     if (address && info) usdtBalance(address, info.token).then(setBalance)
-  }, [address, info, step.kind])
+  }, [address, info, step.kind, drip.kind])
+
+  useEffect(() => {
+    api.faucet().then(setFaucet, () => setFaucet({ enabled: false }))
+  }, [])
 
   if (loadError) return <Card><p className="text-red-700">{loadError}</p></Card>
   if (!info || !ready) return <Card><p className="text-stone-500">Loading…</p></Card>
 
   const alreadyPaid = info.status !== "open"
+  const short = balance !== undefined && balance < Number(info.amount)
+
+  // Live demo only: a new email wallet holds no USDT, so the server's faucet sends a little, gas-free.
+  async function getTestUsdt() {
+    if (!address) return
+    setDrip({ kind: "sending" })
+    try {
+      await api.drip(address)
+      setDrip({ kind: "sent" })
+    } catch (e) {
+      setDrip({ kind: "error", message: (e as Error).message })
+    }
+  }
 
   async function pay() {
     if (!info || !address) return
@@ -100,9 +119,22 @@ export function Checkout({ id }: { id: string }) {
               Signed in as {user?.email?.address}
               {balance !== undefined && <> · Balance {balance.toFixed(2)} USDT</>}
             </p>
+            {short && faucet?.enabled && drip.kind !== "sent" && (
+              <div className="rounded-lg border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700">
+                <p>This is a testnet demo. Your new wallet has no test USDT yet.</p>
+                <button
+                  className="mt-2 rounded-lg border border-stone-300 bg-white px-3 py-1.5 disabled:opacity-50"
+                  disabled={!address || drip.kind === "sending"}
+                  onClick={getTestUsdt}
+                >
+                  {drip.kind === "sending" ? "Sending…" : `Get ${faucet.drip} test USDT`}
+                </button>
+                {drip.kind === "error" && <p className="mt-2 text-red-700">{drip.message}</p>}
+              </div>
+            )}
             <button
               className="w-full rounded-lg bg-emerald-700 py-3 text-lg text-white disabled:opacity-50"
-              disabled={!address || step.kind === "paying"}
+              disabled={!address || step.kind === "paying" || short}
               onClick={pay}
             >
               {step.kind === "paying" ? "Paying…" : `Pay $${Number(info.amount).toFixed(2)}`}

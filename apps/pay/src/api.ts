@@ -78,6 +78,9 @@ export const api = {
   refundInfo: (id: string) => call<RefundInfo>(`/v1/orders/${id}/refund`),
   refund: (id: string, body: { amount: string; validAfter: number; validBefore: number; signature: Hex }) =>
     call<{ txHash: Hex }>(`/v1/orders/${id}/refund`, { method: "POST", body: JSON.stringify(body) }),
+  faucet: () => call<{ enabled: boolean; drip?: string }>("/v1/faucet"),
+  drip: (address: Address) =>
+    call<{ amount: string; txHash: Hex }>("/v1/faucet", { method: "POST", body: JSON.stringify({ address }) }),
 }
 
 export const usdtBalance = async (address: Address, token: Address) => {
