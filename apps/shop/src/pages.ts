@@ -5,6 +5,9 @@ import { html } from "hono/html"
 type Row = { area: string; bhk2: number; bhk1: number }
 const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`
 
+const SITE = process.env.SHOP_URL ?? "http://localhost:3002"
+const DESCRIPTION = "Median monthly rents for 1BHK and 2BHK flats in Mumbai, neighbourhood by neighbourhood. Pay with just your email, no wallet app, no gas."
+
 const short = (w: string) => `${w.slice(0, 6)}…${w.slice(-4)}`
 
 const layout = (title: string, body: unknown, user?: string) => html`<!doctype html>
@@ -13,6 +16,23 @@ const layout = (title: string, body: unknown, user?: string) => html`<!doctype h
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>${title}</title>
+      <meta name="description" content="${DESCRIPTION}" />
+      <meta name="theme-color" content="#1b1813" />
+      <link rel="icon" href="/favicon.ico" sizes="32x32" />
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      <meta property="og:type" content="website" />
+      <meta property="og:site_name" content="Brickline" />
+      <meta property="og:url" content="${SITE}" />
+      <meta property="og:title" content="${title}" />
+      <meta property="og:description" content="${DESCRIPTION}" />
+      <meta property="og:image" content="${SITE}/og.png" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="${title}" />
+      <meta name="twitter:description" content="${DESCRIPTION}" />
+      <meta name="twitter:image" content="${SITE}/og.png" />
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
       <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />

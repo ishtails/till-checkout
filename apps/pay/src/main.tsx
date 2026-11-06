@@ -15,6 +15,19 @@ const whitechain = defineChain({
   blockExplorers: { default: { name: "Whitechain Explorer", url: "https://explorer.testnet.whitechain.io" } },
 })
 
+// Each page's tab title. The landing keeps index.html's; the agent console adds a pending count.
+const titles: Record<string, string> = {
+  docs: "Docs · Till",
+  checkout: "Checkout · Till",
+  receipt: "Receipt · Till",
+  receipts: "Your receipts · Till",
+  dashboard: "Merchant dashboard · Till",
+  signin: "Sign in with Till",
+  agent: "Agent console · Till",
+}
+const pageTitle = titles[location.pathname.split("/")[1] ?? ""]
+if (pageTitle) document.title = pageTitle
+
 const root = createRoot(document.getElementById("root")!)
 // The landing page and the docs need no wallet, so they render without Privy.
 if (location.pathname === "/") root.render(<Landing />)

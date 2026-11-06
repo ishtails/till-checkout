@@ -68,6 +68,22 @@ const signedIn = (c: Context) => checkout.verifySignIn(getCookie(c, PASS_COOKIE)
 
 app.get("/", c => c.html(home(rentData, signedIn(c))))
 
+// The shop's icons and link-preview image.
+const files: Record<string, string> = {
+  "/favicon.ico": "image/x-icon",
+  "/favicon.svg": "image/svg+xml",
+  "/apple-touch-icon.png": "image/png",
+  "/og.png": "image/png",
+}
+for (const [path, type] of Object.entries(files)) {
+  app.get(path, c =>
+    c.body(Bun.file(new URL(`../public${path}`, import.meta.url).pathname).stream(), 200, {
+      "content-type": type,
+      "cache-control": "public, max-age=86400",
+    }),
+  )
+}
+
 app.get("/signout", c => {
   deleteCookie(c, PASS_COOKIE, { path: "/" })
   return c.redirect("/")
