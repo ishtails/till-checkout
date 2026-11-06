@@ -253,7 +253,7 @@ export function Landing() {
                   "Add it in about 20 lines and get paid in USDT on Whitechain.",
                   "Customers pay with just an email. They never hold gas: the shop prepays it from a gas tank, in USDT.",
                   "Agents pay per call over x402. No account or API key.",
-                  "Refund people and agents in one click, in full or in part. A CSV for the accountant.",
+                  "Refund people and agents in one click, in full or in part. Download every payment as a CSV.",
                 ].map(t => (
                   <li key={t} className="flex gap-2">
                     <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-brand" weight="fill" />

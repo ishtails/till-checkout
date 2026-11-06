@@ -329,7 +329,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
             onClick={() => download(`till-${merchantId}-${new Date().toISOString().slice(0, 10)}.csv`, ledgerCsv(orders!, agentPayments!))}
           >
             <DownloadSimpleIcon />
-            CSV for your accountant
+            Download CSV
           </Button>
         </div>
         <Card className="mt-4 gap-0 py-0">
