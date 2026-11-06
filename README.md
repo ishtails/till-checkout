@@ -43,7 +43,7 @@ Merchants want AI agents as customers: an agent can pay five cents for one API c
 Before the event we tested the attack on Claude Haiku, Sonnet and Opus, 27 runs. Injected instructions ("the provider moved to a premium endpoint") didn't work: in 18 runs, no model tried the attacker's endpoint. **A poisoned link fooled every model, every time**, because nothing on the page gives it away; only the payment request shows the real price and payee. So the limit has to live in the wallet, not the model. In Till, the guard blocked every one of those attempts before anything was signed.
 
 ## What happens in the demo
-1. A data shop adds Till in about 20 lines (`apps/shop`).
+1. Brickline, a demo data shop, adds Till in about 20 lines (`apps/shop`).
 2. A customer buys a $5 report with an email and a code. No wallet setup, no gas.
 3. An AI agent follows a review page's link to what looks like the shop's API. It's a look-alike: the page says $0.05, but the API asks $0.50, paid to a stranger. The agent's spending guard blocks it before anything is signed, and the agent stops and says why.
 4. Run again against the real shop, the agent pays $0.05 with no human approving.
