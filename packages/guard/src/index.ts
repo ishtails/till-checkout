@@ -29,6 +29,8 @@ export type Decision = {
   usd: string
   payTo: string
   merchant?: string // the allowlisted merchant's name, when the payee is one
+  registry?: string // the Arkiv entity the payee was checked against
+  claimed?: string // who the agent said it was paying, when that isn't who the payee is
   resource?: string
   reasons?: string[]
   tx?: string
@@ -42,9 +44,28 @@ export type Approver = {
   wait: (id: string) => Promise<{ approved: boolean; by?: string; reason?: string }>
 }
 
+/** A seller as Till's registry on Arkiv lists it. */
+export type RegistryEntry = { name: string; payTo: Record<string, string>; entityKey: string }
+
+/**
+ * What the registry says about one payment, looked up before `check` so `check` stays pure.
+ * `seller` is who the agent believes it's paying; `entry` is that seller's Arkiv record (or, when
+ * the agent named no one, whoever is registered at the payTo). No entry means nobody matched.
+ */
+export type RegistryView = { seller?: string; entry?: RegistryEntry; error?: string }
+
+/** Builds the view from the registry's listings: the named seller's record, or whoever is paid at payTo. */
+export function registryView(listings: RegistryEntry[], req: PaymentRequest, seller?: string): RegistryView {
+  const entry = seller
+    ? listings.find(l => same(l.name, seller))
+    : listings.find(l => l.payTo[req.network] && same(l.payTo[req.network], req.payTo))
+  return { seller, entry }
+}
+
 const today = () => new Date().toISOString().slice(0, 10)
 const money = (usd: number) => `$${usd.toFixed(2)}`
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
+const short = (s: string) => (s.length > 14 ? `${s.slice(0, 6)}…${s.slice(-4)}` : s)
 // Sums in whole micro-dollars, so ten $0.05 payments are exactly $0.50.
 const add = (a: number, b: number) => Math.round((a + b) * 1e6) / 1e6
 
@@ -54,7 +75,7 @@ const add = (a: number, b: number) => Math.round((a + b) * 1e6) / 1e6
  * unless `needsApproval`: then it's allowed but unusual, so the owner decides. A failing rule is
  * never something the owner can approve.
  */
-export function check(policy: Policy, spent: Spent, req: PaymentRequest) {
+export function check(policy: Policy, spent: Spent, req: PaymentRequest, registry?: RegistryView) {
   const usd = Number(req.amount) / 1e6
   const reasons: string[] = []
   const merchant = policy.merchants.find(m => m.payTo[req.network] && same(m.payTo[req.network], req.payTo))
@@ -66,6 +87,17 @@ export function check(policy: Policy, spent: Spent, req: PaymentRequest) {
   }
   // 2. Payee on the allowlist.
   if (!merchant) reasons.push(`payee ${req.payTo} is not on the allowlist`)
+  // 2b. Payee matches the seller's record on Arkiv (when the registry was consulted). The page or
+  // the 402 can say anything; the registry says where the seller is actually paid.
+  if (registry) {
+    const { seller, entry, error } = registry
+    if (error) reasons.push(`couldn't check the payee on Arkiv: ${error}`)
+    else if (!entry) reasons.push(seller ? `${seller} isn't listed on Arkiv` : `payee ${req.payTo} isn't a Till merchant on Arkiv`)
+    else if (!entry.payTo[req.network] || !same(entry.payTo[req.network], req.payTo))
+      reasons.push(`payee ${short(req.payTo)} isn't ${entry.name}'s registered address on Arkiv (entity ${short(entry.entityKey)})`)
+    else if (merchant && !same(merchant.name, entry.name))
+      reasons.push(`the allowlist calls ${short(req.payTo)} ${merchant.name}, but Arkiv lists it as ${entry.name}`)
+  }
   // 3. Per-call cap (an unknown payee gets the lowest cap in the policy).
   const cap = merchant?.maxPerCallUsd ?? Math.min(...policy.merchants.map(m => m.maxPerCallUsd))
   if (usd > cap) reasons.push(`${money(usd)} is above the ${money(cap)} per-call cap`)
@@ -103,17 +135,43 @@ export function record(spent: Spent, merchant: string, usd: number): Spent {
  */
 export function guard(
   client: x402Client,
-  { policy, stateFile, onDecision, approver }: { policy: Policy; stateFile: string; onDecision?: (d: Decision) => unknown; approver?: Approver },
+  {
+    policy,
+    stateFile,
+    onDecision,
+    approver,
+    registry,
+  }: {
+    policy: Policy
+    stateFile: string
+    onDecision?: (d: Decision) => unknown
+    approver?: Approver
+    /** Looks the payment up in Till's registry on Arkiv. A lookup that throws is a hard block. */
+    registry?: (req: PaymentRequest) => Promise<RegistryView>
+  },
 ) {
   const load = (): Spent => (existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : { day: today(), total: 0, byMerchant: {} })
 
   // The response hook doesn't always get the 402, so remember which resource is being paid for.
   let resource: string | undefined
+  let checkedAgainst: string | undefined
 
   client.onBeforePaymentCreation(async ({ paymentRequired, selectedRequirements: r }) => {
     resource = paymentRequired.resource?.url
-    const { merchant, usd, reasons, needsApproval } = check(policy, load(), r)
-    const base = { network: r.network, asset: r.asset, amount: r.amount, usd: usd.toFixed(2), payTo: r.payTo, merchant: merchant?.name, resource }
+    const view = registry && (await registry(r).catch((err): RegistryView => ({ error: (err as Error).message })))
+    checkedAgainst = view?.entry?.entityKey
+    const { merchant, usd, reasons, needsApproval } = check(policy, load(), r, view)
+    const base = {
+      network: r.network,
+      asset: r.asset,
+      amount: r.amount,
+      usd: usd.toFixed(2),
+      payTo: r.payTo,
+      merchant: merchant?.name,
+      registry: checkedAgainst,
+      claimed: view?.seller && !same(view.seller, merchant?.name ?? "") ? view.seller : undefined,
+      resource,
+    }
     const block = async (why: string[]) => {
       await onDecision?.({ type: "agent.blocked", ...base, reasons: why })
       return { abort: true as const, reason: `BLOCKED: ${why.join("; ")}` }
@@ -149,6 +207,7 @@ export function guard(
       amount: r.amount,
       usd: usd.toFixed(2),
       payTo: r.payTo,
+      registry: checkedAgainst,
       resource: paymentRequired?.resource?.url ?? resource,
       tx: settleResponse.transaction,
     })

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { check, record, type Policy, type Spent } from "./index"
+import { check, record, registryView, type Policy, type RegistryEntry, type Spent } from "./index"
 
 const SHOP_EVM = "0x2A50c1fC157B10404A6BD4197B98c665684915D7"
 const SHOP_HEDERA = "0.0.11155222"
@@ -69,5 +69,49 @@ describe("check", () => {
     const old: Spent = { day: "2026-11-04", total: 1, byMerchant: { "Brickline": 0.5 } }
     expect(check(policy, old, hedera("50000")).reasons).toEqual([])
     expect(record(old, "Brickline", 0.05)).toEqual({ day, total: 0.05, byMerchant: { "Brickline": 0.05 } })
+  })
+})
+
+describe("registry on Arkiv", () => {
+  const KEY = "0x2b22a7b395f4d97cef1632c54ea44733bab048ee2e0aae80ec6ea0ff996efdc2"
+  const listings: RegistryEntry[] = [{ name: "Brickline", payTo: { "eip155:1874": SHOP_EVM, "hedera:testnet": SHOP_HEDERA }, entityKey: KEY }]
+  const STRANGER = "0x7854711f971b3183Ed52BeaA28f62c2d2582FA80"
+  const evm = (amount: string, payTo: string) => ({ network: "eip155:1874", asset: USDT, amount, payTo })
+
+  test("the real shop matches Brickline's record", () => {
+    const req = hedera("50000")
+    expect(check(policy, none, req, registryView(listings, req, "Brickline")).reasons).toEqual([])
+    expect(check(policy, none, req, registryView(listings, req)).reasons).toEqual([])
+  })
+
+  test("the look-alike claiming to be Brickline is blocked, naming Arkiv", () => {
+    const req = evm("500000", STRANGER)
+    expect(check(policy, none, req, registryView(listings, req, "Brickline")).reasons).toEqual([
+      `payee ${STRANGER} is not on the allowlist`,
+      "payee 0x7854…FA80 isn't Brickline's registered address on Arkiv (entity 0x2b22…fdc2)",
+      "$0.50 is above the $0.10 per-call cap",
+    ])
+  })
+
+  test("an unnamed payee nobody registered", () => {
+    const req = hedera("50000", "0.0.6660666")
+    expect(check(policy, none, req, registryView(listings, req)).reasons).toContain("payee 0.0.6660666 isn't a Till merchant on Arkiv")
+  })
+
+  test("a seller Arkiv doesn't list", () => {
+    const req = hedera("50000")
+    expect(check(policy, none, req, registryView(listings, req, "RentFast")).reasons).toEqual(["RentFast isn't listed on Arkiv"])
+  })
+
+  test("the allowlist and Arkiv disagree about who the payee is", () => {
+    const renamed = [{ ...listings[0], name: "Someone else" }]
+    const req = hedera("50000")
+    expect(check(policy, none, req, registryView(renamed, req)).reasons).toEqual([
+      "the allowlist calls 0.0.11155222 Brickline, but Arkiv lists it as Someone else",
+    ])
+  })
+
+  test("Arkiv unreachable is a hard block", () => {
+    expect(check(policy, none, hedera("50000"), { error: "timeout" }).reasons).toEqual(["couldn't check the payee on Arkiv: timeout"])
   })
 })
