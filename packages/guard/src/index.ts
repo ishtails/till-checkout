@@ -142,7 +142,8 @@ export function guard(
     approver,
     registry,
   }: {
-    policy: Policy
+    /** The policy, or a function that gets it fresh for each payment (limits the owner changed on the console). */
+    policy: Policy | (() => Policy | Promise<Policy>)
     stateFile: string
     onDecision?: (d: Decision) => unknown
     approver?: Approver
@@ -150,6 +151,7 @@ export function guard(
     registry?: (req: PaymentRequest) => Promise<RegistryView>
   },
 ) {
+  const current = async () => (typeof policy === "function" ? await policy() : policy)
   const load = (): Spent => (existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : { day: today(), total: 0, byMerchant: {} })
 
   // The response hook doesn't always get the 402, so remember which resource is being paid for.
@@ -160,7 +162,8 @@ export function guard(
     resource = paymentRequired.resource?.url
     const view = registry && (await registry(r).catch((err): RegistryView => ({ error: (err as Error).message })))
     checkedAgainst = view?.entry?.entityKey
-    const { merchant, usd, reasons, needsApproval } = check(policy, load(), r, view)
+    const p = await current()
+    const { merchant, usd, reasons, needsApproval } = check(p, load(), r, view)
     const base = {
       network: r.network,
       asset: r.asset,
@@ -178,7 +181,7 @@ export function guard(
     }
     if (reasons.length > 0) return block(reasons)
     if (!needsApproval) return
-    const limit = `above the ${money(policy.approvalAboveUsd)} auto-pay limit`
+    const limit = `above the ${money(p.approvalAboveUsd)} auto-pay limit`
     if (!approver) return block([`${money(usd)} is ${limit} and no one is set up to approve it`])
 
     // Allowed but unusual: pause and ask the owner. Nothing is signed until they say yes.
@@ -197,7 +200,7 @@ export function guard(
 
   client.onPaymentResponse(async ({ requirements: r, settleResponse, paymentRequired }) => {
     if (!settleResponse?.success) return
-    const { merchant, usd } = check(policy, load(), r)
+    const { merchant, usd } = check(await current(), load(), r)
     if (merchant) writeFileSync(stateFile, JSON.stringify(record(load(), merchant.name, usd), null, 2))
     await onDecision?.({
       type: "agent.paid",

@@ -3,7 +3,9 @@ import { CheckCircleIcon, HandPalmIcon, PauseCircleIcon, ProhibitIcon, RobotIcon
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { Address, Hex } from "viem"
+import { limitsMessage, limitsOf, limitsProblem, type Limits } from "@till/guard/limits"
 import { api, type AgentInfo, type Approval } from "./api"
+import { Input } from "./components/ui/input"
 import { entityExplorer, registry, type ListingRecord } from "./arkiv"
 import { friendly } from "./lib/errors"
 import { Badge, Button, Card, Logo, Muted, RecordLink } from "./ui"
@@ -88,6 +90,8 @@ export function AgentConsole() {
   const [log, setLog] = useState<Entry[]>()
   const [listed, setListed] = useState<ListingRecord[]>()
   const [busy, setBusy] = useState<string>()
+  // The limits being edited, as typed (strings), or undefined when not editing.
+  const [draft, setDraft] = useState<{ daily: string; auto: string; merchants: Record<string, { call: string; day: string }> }>()
   const seen = useRef<Set<string>>(new Set())
 
   const address = wallets.find(w => w.walletClientType === "privy")?.address as Address | undefined
@@ -140,6 +144,41 @@ export function AgentConsole() {
       await api.decide(a.id, { decision, address, signature: signature as Hex })
       toast.success(decision === "approve" ? `Approved ${money(a.usd)}. Your agent is paying now.` : "Denied. Nothing was paid.")
       setApprovals(await api.approvals())
+    } catch (e) {
+      toast.error(friendly((e as Error).message))
+    } finally {
+      setBusy(undefined)
+    }
+  }
+
+  function startEditing() {
+    if (!info) return
+    const p = info.policy
+    setDraft({
+      daily: String(p.dailyBudgetUsd),
+      auto: String(p.approvalAboveUsd),
+      merchants: Object.fromEntries(p.merchants.map(m => [m.name, { call: String(m.maxPerCallUsd), day: String(m.dailyCapUsd) }])),
+    })
+  }
+
+  // The owner signs the new limits; the agent checks that signature itself before using them.
+  async function saveLimits() {
+    if (!info || !draft || !address) return
+    const limits: Limits = {
+      dailyBudgetUsd: Number(draft.daily),
+      approvalAboveUsd: Number(draft.auto),
+      merchants: Object.fromEntries(Object.entries(draft.merchants).map(([n, m]) => [n, { maxPerCallUsd: Number(m.call), dailyCapUsd: Number(m.day) }])),
+    }
+    const problem = limitsProblem(info.policy, limits)
+    if (problem) return toast.error(problem.charAt(0).toUpperCase() + problem.slice(1) + ".")
+    setBusy("limits")
+    try {
+      const issuedAt = new Date().toISOString()
+      const { signature } = await signMessage({ message: limitsMessage(info.name, limits, issuedAt) }, { address, uiOptions: { showWalletUIs: false } })
+      const r = await api.setLimits({ limits, issuedAt, address, signature: signature as Hex })
+      setInfo({ ...info, policy: r.policy, limits: r.limits })
+      setDraft(undefined)
+      toast.success("New limits signed", { description: "Your agent checks your signature and uses them from its next payment." })
     } catch (e) {
       toast.error(friendly((e as Error).message))
     } finally {
@@ -289,8 +328,40 @@ export function AgentConsole() {
           </section>
 
           <aside>
-            <h2 className="text-lg">Limits</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg">Limits</h2>
+              {isOwner && !draft && (
+                <Button variant="outline" size="xs" onClick={startEditing}>
+                  Edit
+                </Button>
+              )}
+            </div>
             <Muted>Checked below the model, so it can't talk its way past them.</Muted>
+            {draft ? (
+              <Card className="mt-4 gap-3 p-5 text-sm">
+                <LimitField label="Daily budget" value={draft.daily} onChange={v => setDraft({ ...draft, daily: v })} />
+                <LimitField label="Asks you above" value={draft.auto} onChange={v => setDraft({ ...draft, auto: v })} />
+                {Object.entries(draft.merchants).map(([name, m]) => (
+                  <div key={name} className="space-y-2 rounded-lg bg-muted px-3 py-2.5">
+                    <p className="flex items-center gap-1.5 font-medium">
+                      <WalletIcon className="size-3.5" weight="fill" />
+                      {name}
+                    </p>
+                    <LimitField label="Per call" value={m.call} onChange={v => setDraft({ ...draft, merchants: { ...draft.merchants, [name]: { ...m, call: v } } })} />
+                    <LimitField label="Per day" value={m.day} onChange={v => setDraft({ ...draft, merchants: { ...draft.merchants, [name]: { ...m, day: v } } })} />
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">You sign the new limits with your wallet. Payees can't be changed here.</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" disabled={busy === "limits"} onClick={() => setDraft(undefined)}>
+                    Cancel
+                  </Button>
+                  <Button variant="brand" className="flex-1" isLoading={busy === "limits"} onClick={saveLimits}>
+                    Sign and save
+                  </Button>
+                </div>
+              </Card>
+            ) : (
             <Card className="mt-4 gap-3 p-5 text-sm">
               <p className="flex justify-between">
                 <span className="text-muted-foreground">Daily budget</span>
@@ -315,10 +386,29 @@ export function AgentConsole() {
               <p className="text-xs text-muted-foreground">
                 Every payee is also checked against the seller's record on Arkiv. Any other payee, asset or amount over a cap is blocked outright. There's nothing to approve: a broken rule isn't unusual, it's wrong.
               </p>
+              {info?.limits && (
+                <p className="flex items-center gap-1.5 border-t pt-3 text-xs text-muted-foreground">
+                  <ShieldCheckIcon className="size-3.5 shrink-0 text-brand" weight="fill" />
+                  Set by {short(info.limits.by)} on {new Date(info.limits.issuedAt).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}, signed with the owner's wallet. The agent checks the signature itself.
+                </p>
+              )}
             </Card>
+            )}
           </aside>
         </div>
       </main>
     </div>
+  )
+}
+
+function LimitField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="flex items-center justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="relative">
+        <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+        <Input className="h-8 w-24 pl-5 text-right tabular-nums" inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} />
+      </span>
+    </label>
   )
 }

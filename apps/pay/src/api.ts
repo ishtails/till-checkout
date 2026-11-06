@@ -1,3 +1,4 @@
+import type { Limits } from "@till/guard/limits"
 import type { Address, Hex } from "viem"
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3001"
@@ -83,7 +84,8 @@ export type AgentPolicy = {
   approvalAboveUsd: number
   merchants: { name: string; payTo: Record<string, string>; maxPerCallUsd: number; dailyCapUsd: number }[]
 }
-export type AgentInfo = { name: string; owner: string | null; topicId: string | null; policy: AgentPolicy }
+export type SignedLimits = { limits: Limits; issuedAt: string; by: string; signature: string }
+export type AgentInfo = { name: string; owner: string | null; topicId: string | null; policy: AgentPolicy; limits: SignedLimits | null }
 export type Approval = {
   id: string
   agent: string
@@ -137,6 +139,8 @@ export const api = {
     call<{ redirect: string }>("/v1/signin", { method: "POST", body: JSON.stringify(body) }),
   agent: () => call<AgentInfo>("/v1/agent"),
   approvals: () => call<Approval[]>("/v1/approvals"),
+  setLimits: (body: { limits: Limits; issuedAt: string; address: Address; signature: Hex }) =>
+    call<{ policy: AgentPolicy; limits: SignedLimits }>("/v1/agent/limits", { method: "PUT", body: JSON.stringify(body) }),
   decide: (id: string, body: { decision: "approve" | "deny"; address: Address; signature: Hex }) =>
     call<Approval>(`/v1/approvals/${id}`, { method: "POST", body: JSON.stringify(body) }),
   faucet: () => call<{ enabled: boolean; drip?: string }>("/v1/faucet"),

@@ -3,11 +3,10 @@
 // tool results. Sellers come from Till's registry on Arkiv, and every payment's payee is checked
 // against the seller's record there before anything is signed.
 // stdout is the MCP channel, so all logging goes to stderr.
-import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { guard, registryView, type Approver, type Decision, type Policy } from "@till/guard"
+import { guard, registryView, type Approver, type Decision } from "@till/guard"
 import { x402Client } from "@x402/core/client"
 import { toClientEvmSigner } from "@x402/evm"
 import { ExactEvmScheme } from "@x402/evm/exact/client"
@@ -18,12 +17,12 @@ import type { Hex } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { z } from "zod"
 import { logDecision, topicUrl } from "./hcs"
+import { currentPolicy } from "./policy"
 import { lookupMerchants } from "./registry"
 
 const AGENT = "research-agent"
 const NETWORK = (process.env.NETWORK ?? "hedera:testnet") as `${string}:${string}`
 const root = resolve(import.meta.dir, "../../..")
-const policy: Policy = JSON.parse(readFileSync(resolve(import.meta.dir, "../policy.json"), "utf8"))
 
 // One network per run, so the client only ever picks that network's option from a 402.
 const client =
@@ -77,7 +76,8 @@ let approvedBy: string | undefined
 let seller: string | undefined
 const decision = () => last
 guard(client, {
-  policy,
+  // Read before every payment, so limits the owner changes on the console apply at once.
+  policy: currentPolicy,
   stateFile: resolve(root, "data/agent-state.json"),
   approver,
   // Read from Arkiv on every payment, so a change to the registry applies at once.

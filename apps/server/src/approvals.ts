@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs"
 import { Hono } from "hono"
 import { isAddress, verifyMessage, type Hex } from "viem"
 import { config } from "./config"
+import type { Policy } from "@till/guard"
+import { applyLimits, limitsMessage, limitsProblem, type Limits } from "@till/guard/limits"
 import { store, type Approval } from "./store"
 
 // Human approval for the agent: when its guard pauses a payment (allowed, but above the auto-pay
@@ -19,15 +21,37 @@ const fresh = (a: Approval): Approval =>
 
 export const approvals = new Hono()
 
-// What the console shows besides the log: the agent's owner, its policy and where its log is.
-approvals.get("/v1/agent", c =>
-  c.json({
+const filePolicy = (): Policy => JSON.parse(readFileSync(config.agentPolicyFile, "utf8"))
+
+// What the console shows besides the log: the agent's owner, its policy (with the owner's signed
+// limits applied) and where its log is. `limits` carries the signature, so the agent checks it itself.
+approvals.get("/v1/agent", c => {
+  const signed = store.getAgentLimits()
+  return c.json({
     name: AGENT,
     owner: config.agentOwners[0] ?? null,
     topicId: config.hcsTopicId ?? null,
-    policy: JSON.parse(readFileSync(config.agentPolicyFile, "utf8")),
-  }),
-)
+    policy: signed ? applyLimits(filePolicy(), signed.limits) : filePolicy(),
+    limits: signed ?? null,
+  })
+})
+
+// The owner changes the limits: { limits, issuedAt, address, signature } over limitsMessage().
+approvals.put("/v1/agent/limits", async c => {
+  const { limits, issuedAt, address, signature } = await c.req.json<{ limits: Limits; issuedAt: string; address: string; signature: Hex }>()
+  if (!isAddress(address) || !config.agentOwners.includes(address.toLowerCase())) return c.json({ error: "only the agent's owner can change its limits" }, 403)
+  const problem = limitsProblem(filePolicy(), limits)
+  if (problem) return c.json({ error: problem }, 400)
+  const age = Date.now() - Date.parse(issuedAt)
+  if (!(age >= -60_000 && age < 5 * 60_000)) return c.json({ error: "sign again: that signature is too old" }, 400)
+  const previous = store.getAgentLimits()
+  if (previous && Date.parse(previous.issuedAt) >= Date.parse(issuedAt)) return c.json({ error: "newer limits are already set" }, 409)
+  const ok = await verifyMessage({ address, message: limitsMessage(AGENT, limits, issuedAt), signature }).catch(() => false)
+  if (!ok) return c.json({ error: "signature doesn't match" }, 403)
+  const signed = { limits, issuedAt, by: address, signature }
+  store.putAgentLimits(signed)
+  return c.json({ policy: applyLimits(filePolicy(), limits), limits: signed })
+})
 
 approvals.get("/v1/approvals", c => c.json(store.listApprovals(AGENT).slice(0, 20).map(fresh)))
 

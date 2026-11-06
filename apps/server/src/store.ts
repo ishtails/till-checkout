@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
 import type { Address, Hex } from "viem"
+import type { SignedLimits } from "@till/guard/limits"
 import { config } from "./config"
 
 export type OrderStatus = "open" | "paid" | "refunded"
@@ -61,6 +62,7 @@ export type Approval = {
 export type Topup = { amount: string; from: string; tx: Hex; ts: number }
 
 type Data = {
+  agentLimits?: SignedLimits // the owner's latest signed limits for the agent (approvals.ts)
   topups: Record<string, Topup[]> // by merchant id
   approvals: Record<string, Approval>
   orders: Record<string, Order>
@@ -95,6 +97,11 @@ export const store = {
   listSettlements: () => Object.values(data.settlements).sort((a, b) => b.ts - a.ts),
   putSettlement(s: Settlement) {
     data.settlements[s.key] = s
+    save()
+  },
+  getAgentLimits: () => data.agentLimits,
+  putAgentLimits(l: SignedLimits) {
+    data.agentLimits = l
     save()
   },
   listTopups: (merchantId: string) => data.topups[merchantId] ?? [],

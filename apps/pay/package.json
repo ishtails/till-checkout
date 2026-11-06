@@ -19,7 +19,8 @@
     "react-dom": "19.2.0",
     "sonner": "2.0.7",
     "tailwind-merge": "3.3.1",
-    "viem": "2.57.16"
+    "viem": "2.57.16",
+    "@till/guard": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.4",

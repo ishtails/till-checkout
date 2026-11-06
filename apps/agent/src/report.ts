@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
+import { currentPolicy } from "./policy"
 import { resolve } from "node:path"
-import type { Decision, Policy, Spent } from "@till/guard"
+import type { Decision, Spent } from "@till/guard"
 
 // The spend report printed after a run: what the agent paid, what was blocked and the budget left.
 // It reads the run's entries back from Hedera's public mirror node, not from the agent's own memory,
@@ -26,7 +27,7 @@ export async function spendReport(startMs: number, agent: string) {
     entries = (await entriesSince(start)).filter(e => e.agent === agent)
   }
 
-  const policy: Policy = JSON.parse(readFileSync(resolve(import.meta.dir, "../policy.json"), "utf8"))
+  const policy = await currentPolicy()
   const stateFile = resolve(root, "data/agent-state.json")
   const today = new Date().toISOString().slice(0, 10)
   const state: Spent | undefined = existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : undefined
