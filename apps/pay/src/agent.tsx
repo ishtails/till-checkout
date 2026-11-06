@@ -85,12 +85,12 @@ function OnArkiv({ listing, payTo, loading }: { listing?: ListingRecord; payTo: 
 
 // The agent's registered identity, and whether the log this console reads is the one its owner registered.
 function IdentityCard({ identity, topicId, owner }: { identity?: AgentIdentity | "error"; topicId?: string; owner?: string }) {
-  // The registry entry was registered by Till's test owner key: the console's owner is an email
+  // The registry entry was registered by a setup script's test key: the console's owner is an email
   // wallet, which can't send transactions on Hedera, and handing the entry over would clear the
   // agent's wallet. Say so rather than show two owners without a reason.
   const ownerNote = (registered: string) =>
     owner && registered.toLowerCase() !== owner.toLowerCase()
-      ? `, Till's test owner key, which can also approve. It registered the agent because your email wallet (${short(owner)}) can't send transactions on Hedera yet`
+      ? `, a setup script's test key, because your email wallet (${short(owner)}) can't send transactions on Hedera yet. That key can't approve payments or change limits: only your wallet can`
       : ""
   if (!identity) return <Muted className="mt-4">Reading the agent's identity on Hedera…</Muted>
   if (identity === "error") return <Muted className="mt-4">Couldn't read the agent's identity on Hedera just now.</Muted>
