@@ -1,7 +1,7 @@
 [
   {
     "id": "data-shop",
-    "name": "Mumbai Rent Data",
+    "name": "Brickline",
     "apiKey": "sk_test_change_me",
     "webhookUrl": "http://localhost:3002/webhooks/checkout",
     "webhookSecret": "whsec_change_me",

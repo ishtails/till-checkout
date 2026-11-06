@@ -73,7 +73,7 @@ const layout = (title: string, body: unknown) => html`<!doctype html>
       </div>
       <div class="wrap">
         <nav>
-          <a class="brand" href="/"><span class="mark">M</span> Mumbai Rent Data</a>
+          <a class="brand" href="/"><span class="mark">B</span> Brickline</a>
           <div class="links"><a href="/#report">The report</a><a href="/#api">For AI agents</a></div>
         </nav>
       </div>
@@ -88,7 +88,7 @@ const buyButton = html`<form method="post" action="/buy">
 
 export const home = (rows: Row[]) =>
   layout(
-    "Mumbai Rent Data",
+    "Brickline · Rent data for Indian cities",
     html`
       <main class="wrap">
         <div class="hero" id="report">
@@ -99,7 +99,7 @@ export const home = (rows: Row[]) =>
             ${buyButton}
           </div>
           <div class="card preview">
-            <h3>Mumbai rent report</h3>
+            <h3>Mumbai Rent Index</h3>
             <p class="sub">Median rent a month, November 2026</p>
             <table>
               <tr><th>Area</th><th class="num">2BHK</th><th class="num">1BHK</th></tr>
@@ -136,19 +136,19 @@ export const home = (rows: Row[]) =>
           </div>
         </section>
       </main>
-      <footer><div class="wrap">Mumbai Rent Data is a demo shop. The figures are sample data. Checkout by Till.</div></footer>
+      <footer><div class="wrap">Brickline is a demo shop built for Till. The figures are sample data.</div></footer>
     `,
   )
 
 export const report = (rows: Row[]) =>
   layout(
-    "Your report · Mumbai Rent Data",
+    "Your report · Brickline",
     html`
       <main class="page">
         <span class="eyebrow">Paid · thank you</span>
         <h1 class="serif" style="margin-top:16px">Your report is ready</h1>
         <div class="card preview" style="margin-top:20px">
-          <h3>Mumbai rent report</h3>
+          <h3>Mumbai Rent Index</h3>
           <p class="sub">Median rent a month, November 2026</p>
           <table>
             <tr><th>Area</th><th class="num">2BHK</th><th class="num">1BHK</th></tr>
@@ -162,7 +162,7 @@ export const report = (rows: Row[]) =>
 
 export const waiting = () =>
   layout(
-    "Waiting for payment · Mumbai Rent Data",
+    "Waiting for payment · Brickline",
     html`
       <main class="page">
         <h1 class="serif">Waiting for your payment</h1>

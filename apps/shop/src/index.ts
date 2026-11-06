@@ -15,7 +15,7 @@ const checkout = new Checkout({ apiKey: process.env.CHECKOUT_API_KEY!, webhookSe
 
 // People: sell the report
 app.post("/buy", async c => {
-  const order = await checkout.createOrder({ amount: REPORT_PRICE, description: "Mumbai rent report", returnUrl: SHOP_URL + "/thanks" })
+  const order = await checkout.createOrder({ amount: REPORT_PRICE, description: "Mumbai Rent Index, Nov 2026", returnUrl: SHOP_URL + "/thanks" })
   return c.redirect(order.checkoutUrl)
 })
 app.post("/webhooks/checkout", async c => {
@@ -25,7 +25,7 @@ app.post("/webhooks/checkout", async c => {
 })
 
 // Agents: charge per call
-app.use("/api/data", checkout.paywall({ price: "0.05", description: "Mumbai rent data, one area" }))
+app.use("/api/data", checkout.paywall({ price: "0.05", description: "Rent data, one neighbourhood" }))
 // ---- end of Till ----
 
 // The API's answer says what each number is, so an agent can quote it without guessing.

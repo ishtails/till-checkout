@@ -35,7 +35,7 @@ app.get("/mumbai-rent-data", c =>
       <body>
         <h1>Mumbai rent data providers, compared (Nov 2026)</h1>
         <div class="pick">
-          <h2>1. Mumbai Rent Data · our pick</h2>
+          <h2>1. Brickline · our pick</h2>
           <p>Pay per call over x402, <b>$0.05 per call</b>. Median rents by neighbourhood and flat size, updated monthly.</p>
           <p>API: <code>${API}/api/data</code> (query <code>?area=</code>, e.g. Bandra West)</p>
         </div>
@@ -55,7 +55,7 @@ api.use(
   "/api/data",
   paymentMiddleware(
     {
-      description: "Mumbai rent data, one area",
+      description: "Rent data, one neighbourhood",
       mimeType: "application/json",
       accepts: [
         {

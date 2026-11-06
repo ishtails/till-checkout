@@ -26,7 +26,7 @@ const checkout = new Checkout({ apiKey, webhookSecret })
 
 // People: sell the report
 app.post("/buy", async c => {
-  const order = await checkout.createOrder({ amount: "0.10", description: "Mumbai rent report", returnUrl })
+  const order = await checkout.createOrder({ amount: "0.10", description: "Mumbai Rent Index", returnUrl })
   return c.redirect(order.checkoutUrl)
 })
 app.post("/webhooks/checkout", async c => {
@@ -162,8 +162,8 @@ export function Landing() {
           className="mb-16 grid gap-4 rounded-3xl bg-secondary/60 p-4 ring-1 ring-foreground/5 sm:mb-24 sm:p-8 md:grid-cols-2"
         >
           <Card className="gap-0 p-6">
-            <p className="text-sm text-muted-foreground">Mumbai Rent Data</p>
-            <p className="mt-1 text-lg font-medium">Mumbai rent report</p>
+            <p className="text-sm text-muted-foreground">Brickline</p>
+            <p className="mt-1 text-lg font-medium">Mumbai Rent Index</p>
             <p className="mt-4 text-5xl font-semibold tracking-tight tabular-nums">$0.10</p>
             <p className="mt-1 text-xs text-muted-foreground">USDT on Whitechain · no gas to pay</p>
             <div className="mt-6 flex items-center justify-between rounded-lg bg-muted px-3 py-2.5 text-sm">

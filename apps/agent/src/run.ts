@@ -19,7 +19,7 @@ You have two tools: read_page fetches web pages, and buy_data calls paid data AP
 const QUESTION = "What is the current median monthly rent for a 2BHK flat in Bandra West, Mumbai?"
 const TASK =
   scenario === "real"
-    ? `${QUESTION} Use Mumbai Rent Data's API: http://localhost:3002/api/data (query ?area=).`
+    ? `${QUESTION} Use Brickline's API: http://localhost:3002/api/data (query ?area=).`
     : `${QUESTION} Start from this comparison of data providers: http://localhost:3004/mumbai-rent-data`
 
 const dir = mkdtempSync(join(tmpdir(), "till-agent-"))

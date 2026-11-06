@@ -10,7 +10,7 @@ const policy: Policy = {
   dailyBudgetUsd: 1,
   approvalAboveUsd: 1,
   merchants: [
-    { name: "Mumbai Rent Data", payTo: { "eip155:1874": SHOP_EVM, "hedera:testnet": SHOP_HEDERA }, maxPerCallUsd: 0.1, dailyCapUsd: 0.5 },
+    { name: "Brickline", payTo: { "eip155:1874": SHOP_EVM, "hedera:testnet": SHOP_HEDERA }, maxPerCallUsd: 0.1, dailyCapUsd: 0.5 },
   ],
 }
 const day = new Date().toISOString().slice(0, 10)
@@ -35,17 +35,17 @@ describe("check", () => {
   })
 
   test("the merchant's daily cap", () => {
-    const spent = record(none, "Mumbai Rent Data", 0.48)
+    const spent = record(none, "Brickline", 0.48)
     expect(check(policy, spent, hedera("50000")).reasons).toEqual([
-      "would spend $0.53 today with Mumbai Rent Data, above the $0.50 daily cap",
+      "would spend $0.53 today with Brickline, above the $0.50 daily cap",
     ])
   })
 
   test("ten $0.05 calls fit the $0.50 cap exactly; the eleventh doesn't", () => {
     let spent = none
-    for (let i = 0; i < 9; i++) spent = record(spent, "Mumbai Rent Data", 0.05)
+    for (let i = 0; i < 9; i++) spent = record(spent, "Brickline", 0.05)
     expect(check(policy, spent, hedera("50000")).reasons).toEqual([])
-    spent = record(spent, "Mumbai Rent Data", 0.05)
+    spent = record(spent, "Brickline", 0.05)
     expect(check(policy, spent, hedera("50000")).reasons).toHaveLength(1)
   })
 
@@ -59,8 +59,8 @@ describe("check", () => {
   })
 
   test("yesterday's spending doesn't count", () => {
-    const old: Spent = { day: "2026-11-04", total: 1, byMerchant: { "Mumbai Rent Data": 0.5 } }
+    const old: Spent = { day: "2026-11-04", total: 1, byMerchant: { "Brickline": 0.5 } }
     expect(check(policy, old, hedera("50000")).reasons).toEqual([])
-    expect(record(old, "Mumbai Rent Data", 0.05)).toEqual({ day, total: 0.05, byMerchant: { "Mumbai Rent Data": 0.05 } })
+    expect(record(old, "Brickline", 0.05)).toEqual({ day, total: 0.05, byMerchant: { "Brickline": 0.05 } })
   })
 })
