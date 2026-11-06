@@ -1,14 +1,20 @@
 
-<img src="assets/logo.png" alt="Till logo: a cash drawer" width="96" align="left">
+<p align="center">
+  <img src="assets/cover@2x.png" alt="Till: get paid by people and AI agents that can't be tricked into overpaying" width="880">
+</p>
 
-# Till
-Get paid by people and AI agents that can't be tricked into overpaying.
+<h1 align="center">Till</h1>
 
-For small online sellers who want to be paid in USDT by people and by AI agents. <br/>
-The checkout: people pay with an email and no gas, agents pay per API call with no sign-up, and refunds take one click.<br/>
-The spending guard: the agent's limits are checked before anything is signed, and every payment and blocked attempt is a public record.<br/>
+<p align="center"><b>Get paid by people and AI agents that can't be tricked into overpaying.</b></p>
 
-**Try it live: [till.ishtails.xyz](https://till.ishtails.xyz)** · Demo video: _(link added once recorded)_ · Built solo at ETHGlobal Mumbai, 5–7 Nov 2026 · Specs in [`design/`](design/)
+<p align="center">
+  A checkout for small online sellers: people pay in USDT with an email and no gas, agents pay per API call with no sign-up, and refunds take one click.<br>
+  A spending guard for whoever runs the agent: its limits are checked before anything is signed, and every payment and blocked attempt is a public record.
+</p>
+
+<p align="center">
+  <a href="https://till.ishtails.xyz"><b>Try it live</b></a> · Demo video <i>(link added once recorded)</i> · <a href="design/">Specs</a> · Built solo at ETHGlobal Mumbai, 5–7 Nov 2026
+</p>
 
 > **On the live demo:** open the [demo shop](https://shop.till.ishtails.xyz), sign in with any email, get free test USDT, and buy the report ($0.10, prices are lowered for testnet). Your receipt is read from Arkiv. The agent demo runs on my laptop; its spending log is public on [HashScan](https://hashscan.io/testnet/topic/0.0.11155231).
 
