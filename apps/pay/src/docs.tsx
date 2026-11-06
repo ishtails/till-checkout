@@ -121,6 +121,12 @@ const registry = registryReader(ARKIV_ACCESS_KEY) // "" uses Arkiv's public, rat
 const sellers = await registry.list("rent-data")   // name, endpoints with prices, payTo, entityKey
 const who = await registry.byPayTo("eip155:1874", payTo) // undefined if no Till merchant is paid there`
 
+const agentRefund = `GET  /v1/agent-payments/:key/refund
+→ { from, to, remainingAtomic, nonce, validBefore, domain }   // merchant → agent, at most what's left
+
+POST /v1/agent-payments/:key/refund
+{ amount: "0.25", nonce, validBefore, signature }   // the merchant's TransferWithAuthorization`
+
 const receipts = `import { receiptReader } from "@till/receipts"
 
 const receipts = receiptReader(ARKIV_ACCESS_KEY)
@@ -261,10 +267,14 @@ export function Docs() {
 
             <Doc id="refunds" title="Refunds">
               <p>
-                <b>Checkout orders.</b> From the dashboard, the merchant refunds an order in full or in part. They sign a USDT transfer in their email wallet (no gas), Till's relayer submits it to the Checkout contract, and the contract won't refund more than was paid. Each refund sends <code>order.refunded</code> and is saved to Arkiv.
+                <b>Checkout orders.</b> From the dashboard, the merchant refunds an order in full or in part, as many times as they like. They sign a USDT transfer in their email wallet (no gas), Till's relayer submits it to the Checkout contract, and the contract won't refund more than was paid in total. Each refund sends <code>order.refunded</code> and is saved to Arkiv.
               </p>
               <p>
-                <b>Agent payments on Whitechain.</b> An x402 payment went straight from the agent to the merchant, so its refund is the reverse: the merchant signs an EIP-3009 transfer back to the agent's wallet, and the relayer submits it. The total can't pass what was paid. Hedera payments are refunded from the merchant's own Hedera wallet.
+                <b>Agent payments on Whitechain.</b> An x402 payment went straight from the agent's wallet to the merchant's, so its refund is the reverse. The merchant signs an EIP-3009 <code>TransferWithAuthorization</code> back to the agent's wallet, and the relayer submits it, so the merchant pays no gas. Till checks the total can't pass what was paid.
+              </p>
+              <CodeWindow code={agentRefund} filename="agent refund" />
+              <p>
+                <b>Agent payments on Hedera</b> are refunded from the merchant's own Hedera wallet.
               </p>
             </Doc>
 
@@ -318,7 +328,7 @@ export function Docs() {
                 signed transfer like every other payment, so topping up costs you no gas either.
               </p>
               <p>
-                Each transaction is charged at its real fee, read from its receipt and priced at WBT's market rate, <b>plus 10%</b>. New merchants start with{" "}
+                Each transaction is charged at its real fee, read from its receipt and priced at a WBT rate set in Till's config, <b>plus 10%</b>. New merchants start with{" "}
                 <b>$5 of credit</b>, about a hundred transactions. When the tank runs dry, Till stops paying gas for your payments until you top up, and the
                 customer sees a clear message instead of a stuck payment.
               </p>
