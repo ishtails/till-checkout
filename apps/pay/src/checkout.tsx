@@ -22,7 +22,7 @@ type Step =
   | { kind: "ready" }
   | { kind: "signing" }
   | { kind: "sending" }
-  | { kind: "paid"; tx: Hex }
+  | { kind: "paid"; tx: Hex; pass: string }
   | { kind: "error"; message: string }
 
 const RETURN_SECONDS = 5
@@ -54,11 +54,18 @@ export function Checkout({ id }: { id: string }) {
     api.faucet().then(setFaucet, () => setFaucet({ enabled: false }))
   }, [])
 
+  // Back to the shop, carrying the sign-in pass from this payment, so the shop knows who paid.
+  const backToShop = () => {
+    if (!info) return
+    const url = info.returnUrl + `?order=${id}`
+    location.href = step.kind === "paid" ? `${url}&till_pass=${step.pass}` : url
+  }
+
   // After paying here, go back to the shop on its own, unless the customer stops it.
   useEffect(() => {
     if (countdown === undefined || !info) return
     if (countdown <= 0) {
-      location.href = info.returnUrl + `?order=${id}`
+      backToShop()
       return
     }
     const t = setTimeout(() => setCountdown(c => (c === undefined ? c : c - 1)), 1000)
@@ -126,8 +133,8 @@ export function Checkout({ id }: { id: string }) {
         { address, uiOptions: { showWalletUIs: false } },
       )
       setStep({ kind: "sending" })
-      const { txHash } = await api.pay(id, { payer: address, validAfter: 0, validBefore: fresh.validBefore, signature: signature as Hex })
-      setStep({ kind: "paid", tx: txHash })
+      const { txHash, pass } = await api.pay(id, { payer: address, validAfter: 0, validBefore: fresh.validBefore, signature: signature as Hex })
+      setStep({ kind: "paid", tx: txHash, pass })
       setCountdown(RETURN_SECONDS)
       toast.success("Payment confirmed", { description: `$${Number(info.amount).toFixed(2)} to ${info.merchantName}` })
     } catch (e) {
@@ -157,7 +164,7 @@ export function Checkout({ id }: { id: string }) {
                 <ReceiptIcon />
                 View receipt
               </Button>
-              <Button onClick={() => (location.href = info.returnUrl + `?order=${id}`)}>Back to {info.merchantName}</Button>
+              <Button onClick={backToShop}>Back to {info.merchantName}</Button>
             </div>
             {countdown !== undefined && (
               <p className="text-center text-xs text-muted-foreground">

@@ -71,13 +71,16 @@ export const api = {
   checkout: (id: string) => call<CheckoutInfo>(`/v1/checkout/${id}`),
   order: (id: string) => call<Order>(`/v1/orders/${id}`),
   pay: (id: string, body: { payer: Address; validAfter: number; validBefore: number; signature: Hex }) =>
-    call<{ txHash: Hex }>(`/v1/checkout/${id}/pay`, { method: "POST", body: JSON.stringify(body) }),
+    call<{ txHash: Hex; pass: string }>(`/v1/checkout/${id}/pay`, { method: "POST", body: JSON.stringify(body) }),
   orders: (merchant: string) => call<Order[]>(`/v1/orders?merchant=${merchant}`),
   gas: (merchant: string) => call<GasMeter>(`/v1/gas?merchant=${merchant}`),
   agentPayments: () => call<AgentPayment[]>("/v1/agent-payments"),
   refundInfo: (id: string) => call<RefundInfo>(`/v1/orders/${id}/refund`),
   refund: (id: string, body: { amount: string; validAfter: number; validBefore: number; signature: Hex }) =>
     call<{ txHash: Hex }>(`/v1/orders/${id}/refund`, { method: "POST", body: JSON.stringify(body) }),
+  signinInfo: (merchant: string) => call<{ merchant: string; name: string }>(`/v1/signin/${merchant}`),
+  signin: (body: { merchant: string; address: Address; issuedAt: string; signature: Hex; returnUrl: string }) =>
+    call<{ redirect: string }>("/v1/signin", { method: "POST", body: JSON.stringify(body) }),
   faucet: () => call<{ enabled: boolean; drip?: string }>("/v1/faucet"),
   drip: (address: Address) =>
     call<{ amount: string; txHash: Hex }>("/v1/faucet", { method: "POST", body: JSON.stringify({ address }) }),
