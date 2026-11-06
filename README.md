@@ -8,7 +8,9 @@ For small online sellers who want to be paid in USDT by people and by AI agents.
 The checkout: people pay with an email and no gas, agents pay per API call with no sign-up, and refunds take one click.
 The spending guard: the agent's limits are checked before anything is signed, and every payment and blocked attempt is a public record.
 
-**Demo video:** _(link added once recorded)_ · Built solo at ETHGlobal Mumbai, 5–7 Nov 2026 · Specs in [`design/`](design/)
+**Try it live: [till.ishtails.xyz](https://till.ishtails.xyz)** · Demo video: _(link added once recorded)_ · Built solo at ETHGlobal Mumbai, 5–7 Nov 2026 · Specs in [`design/`](design/)
+
+> **On the live demo:** open the [demo shop](https://shop.till.ishtails.xyz), sign in with any email, get free test USDT, and buy the report ($0.10, prices are lowered for testnet). Your receipt is read from Arkiv. The agent demo runs on my laptop; its spending log is public on [HashScan](https://hashscan.io/testnet/topic/0.0.11155231).
 
 ## Proof
 
