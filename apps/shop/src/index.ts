@@ -42,7 +42,7 @@ app.get("/api/data", c => {
 
 app.onError((err, c) => (err.message.includes("webhook signature") ? c.text("bad signature", 401) : c.text(err.message, 500)))
 
-app.get("/", c => c.html(home()))
+app.get("/", c => c.html(home(rentData)))
 
 app.get("/thanks", async c => {
   const orderId = c.req.query("order") ?? ""
