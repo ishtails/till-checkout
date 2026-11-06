@@ -43,6 +43,7 @@ export type AgentPayment = {
   payer: string
   transaction: string
   ts: number
+  agent?: { agentId: string; registry: string; owner?: string; verified: boolean } // the payer's ERC-8004 identity, if it named one
 }
 
 export const agentExplorerTx = (p: AgentPayment) =>

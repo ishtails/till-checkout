@@ -1,5 +1,5 @@
 import { usePrivy, useSignTypedData, useWallets } from "@privy-io/react-auth"
-import { DownloadSimpleIcon, GasPumpIcon, RobotIcon, ShoppingBagIcon, WarningCircleIcon } from "@phosphor-icons/react"
+import { DownloadSimpleIcon, GasPumpIcon, RobotIcon, SealCheckIcon, ShoppingBagIcon, WarningCircleIcon } from "@phosphor-icons/react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import type { Address, Hex } from "viem"
@@ -395,7 +395,23 @@ export function Dashboard() {
                   return (
                     <TableRow key={p.transaction}>
                       <TableCell className="px-4 py-3 text-xs text-muted-foreground">{new Date(p.ts).toLocaleString()}</TableCell>
-                      <TableCell className="px-4 py-3 font-mono text-xs">{p.payer.startsWith("0x") ? short(p.payer) : p.payer}</TableCell>
+                      <TableCell className="px-4 py-3 font-mono text-xs">
+                        {p.payer.startsWith("0x") ? short(p.payer) : p.payer}
+                        {p.agent?.verified ? (
+                          <a
+                            className="mt-1 flex w-fit items-center gap-1 font-sans text-[11px] font-medium text-brand hover:underline"
+                            href={`https://hashscan.io/testnet/contract/${p.agent.registry.split(":")[2]}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={`ERC-8004 agent #${p.agent.agentId} on Hedera, owned by ${p.agent.owner}`}
+                          >
+                            <SealCheckIcon className="size-3.5" weight="fill" />
+                            Verified agent #{p.agent.agentId} · owner {short(p.agent.owner ?? "")}
+                          </a>
+                        ) : p.agent ? (
+                          <span className="mt-1 block font-sans text-[11px] text-muted-foreground">Claimed agent #{p.agent.agentId}, not verified</span>
+                        ) : null}
+                      </TableCell>
                       <TableCell className="px-4 py-3">
                         <Badge variant="neutral">{hedera ? "USDC on Hedera" : "USDT on Whitechain"}</Badge>
                       </TableCell>
