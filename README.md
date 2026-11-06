@@ -12,17 +12,6 @@
 
 [**Try it live**](https://till.ishtails.xyz) · [**Demo video**](https://www.youtube.com/watch?v=ztqHb8Y0Uu0) · [Docs](https://till.ishtails.xyz/docs) · [Specs](design/) · Built solo at ETHGlobal Mumbai, 5–7 Nov 2026
 
-## Sponsor tracks at a glance
-
-| Track | What's built | Proof |
-|---|---|---|
-| **Whitechain · Operate: Stablecoin Payments for Business** | A drop-in checkout SDK that a separate demo shop adds in about 20 lines. Merchant view (dashboard) and customer view (checkout, receipt, account). Full and partial refunds in one click, a CSV export for the accountant, signed `order.paid` and `order.refunded` webhooks. Paid in USDT on Whitechain Sepolia. | [Verified Checkout contract](https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6) · [USDT payment](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) · [partial refund](https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b) · [the 20 lines](apps/shop/src/index.ts) · [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md) |
-| **Whitechain · Scale: Payments Nobody Notices** | The payer holds no WBT and no seed phrase and never picks a chain: an email wallet signs an EIP-3009 `transferWithAuthorization`, and Till's own relayer submits it. An AI agent pays USDT per request over x402 through Till's own facilitator. The shop prepays gas from a USDT gas tank (real fee + 10%); the relayer's WBT source and 7 drain limits are below. | [Gasless payment, sent by the relayer](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) · [agent's x402 payment on Whitechain](https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20) · [gas and drain protection](#whitechain) |
-| **Hedera · AI Agents That Pay (x402)** | An x402-protected endpoint that settles USDC (an HTS token) on Hedera testnet through Till's own open-source facilitator, with replay and expiry checks. A research agent finds the seller and pays end to end with no human approving. Spending controls: an allowlist, per-call, per-merchant and daily caps, and owner approval above $0.10. ERC-8004 agent identity, and an HCS topic as the agent's tamper-evident spending log. | [Settled payment `0.0.11155223@1793960375.693637515`](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515) · [HCS log `0.0.11155231`](https://hashscan.io/testnet/topic/0.0.11155231) · [ERC-8004 registration](https://hashscan.io/testnet/transaction/0x6a36a9bf4eee48da31e9140db458ce767786403879966f3a6db59281bef76a4b) · [guard](packages/guard) · [facilitator](apps/server) |
-| **Arkiv · Build on Arkiv** | A merchant registry on Arkiv that the agent finds sellers in and that the guard checks every payee against (it's how the look-alike was blocked). A receipt on Arkiv for every payment and refund, read straight from Arkiv by the customer's receipt and account pages, which still load with Till's server down. | [Brickline's listing](https://rabdi.explorer.arkiv.network/entity-explorer?q=%24key%20%3D%20key(0x2b22a7b395f4d97cef1632c54ea44733bab048ee2e0aae80ec6ea0ff996efdc2)) · [one order's receipts](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20order_id%20%3D%20str('0x1b44530319fbffb44ec51e0cec380d6bb019806795a05c064ba28d412a40f0b4')%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)) · [schema, friction, reach, why Arkiv](arkiv/) |
-
-Also in the repo: [setup](#setup), [architecture](#how-it-works-architecture), [limitations](#limitations), the [demo video](https://www.youtube.com/watch?v=ztqHb8Y0Uu0) (3:51, every party on screen), an MIT license, and small commits from kickoff on.
-
 ## Why I built it
 
 AI agents are starting to pay for things, five cents at a time, and shops want them as customers. But an agent that can pay can be tricked into paying.
@@ -124,7 +113,7 @@ The demo's records: [one order](https://rabdi.explorer.arkiv.network/entity-expl
 arkiv.schema = str('till.receipt') AND $owner = addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)
 ```
 
-## How it works (architecture)
+## How it works
 
 ```mermaid
 flowchart LR
@@ -164,7 +153,8 @@ The merchant's whole integration is the block between the two `Till` markers in 
 
 </details>
 
-## Setup
+<details>
+<summary>Setup: run it yourself</summary>
 
 Needs [Bun](https://bun.sh) 1.4 and, for the contract, [Foundry](https://getfoundry.sh).
 
@@ -201,6 +191,8 @@ NETWORK=eip155:1874 bun --env-file=../../.env src/run.ts real   # the same, in U
 
 It needs the `claude` CLI, logged in, and `AGENT_OWNER` set to the owner's wallet. The agent's Hedera account needs testnet USDC and a little HBAR for the log. Approve the `full` run on the agent console, signed in as that wallet.
 
+</details>
+
 ## What's mocked
 - The customer's test USDT comes from the demo's faucet (0.2 USDT per new wallet). In real use they'd withdraw USDT from an exchange.
 - The merchant dashboard and the agent console open only for the right wallet (the shop's, the agent owner's), checked in the browser. Refunds, top-ups, limits and approvals need that wallet's signature anyway.
@@ -234,6 +226,17 @@ It needs the `claude` CLI, logged in, and `AGENT_OWNER` set to the owner's walle
 - **The agent runs on the `claude` CLI's login**, with only the wallet's three tools, so no API key is needed.
 
 </details>
+
+## Sponsor tracks at a glance (for reviewers)
+
+| Track | What's built | Proof |
+|---|---|---|
+| **Whitechain · Operate: Stablecoin Payments for Business** | A drop-in checkout SDK that a separate demo shop adds in about 20 lines. Merchant view (dashboard) and customer view (checkout, receipt, account). Full and partial refunds in one click, a CSV export for the accountant, signed `order.paid` and `order.refunded` webhooks. Paid in USDT on Whitechain Sepolia. | [Verified Checkout contract](https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6) · [USDT payment](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) · [partial refund](https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b) · [the 20 lines](apps/shop/src/index.ts) · [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md) |
+| **Whitechain · Scale: Payments Nobody Notices** | The payer holds no WBT and no seed phrase and never picks a chain: an email wallet signs an EIP-3009 `transferWithAuthorization`, and Till's own relayer submits it. An AI agent pays USDT per request over x402 through Till's own facilitator. The shop prepays gas from a USDT gas tank (real fee + 10%); the relayer's WBT source and 7 drain limits are below. | [Gasless payment, sent by the relayer](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) · [agent's x402 payment on Whitechain](https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20) · [gas and drain protection](#whitechain) |
+| **Hedera · AI Agents That Pay (x402)** | An x402-protected endpoint that settles USDC (an HTS token) on Hedera testnet through Till's own open-source facilitator, with replay and expiry checks. A research agent finds the seller and pays end to end with no human approving. Spending controls: an allowlist, per-call, per-merchant and daily caps, and owner approval above $0.10. ERC-8004 agent identity, and an HCS topic as the agent's tamper-evident spending log. | [Settled payment `0.0.11155223@1793960375.693637515`](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515) · [HCS log `0.0.11155231`](https://hashscan.io/testnet/topic/0.0.11155231) · [ERC-8004 registration](https://hashscan.io/testnet/transaction/0x6a36a9bf4eee48da31e9140db458ce767786403879966f3a6db59281bef76a4b) · [guard](packages/guard) · [facilitator](apps/server) |
+| **Arkiv · Build on Arkiv** | A merchant registry on Arkiv that the agent finds sellers in and that the guard checks every payee against (it's how the look-alike was blocked). A receipt on Arkiv for every payment and refund, read straight from Arkiv by the customer's receipt and account pages, which still load with Till's server down. | [Brickline's listing](https://rabdi.explorer.arkiv.network/entity-explorer?q=%24key%20%3D%20key(0x2b22a7b395f4d97cef1632c54ea44733bab048ee2e0aae80ec6ea0ff996efdc2)) · [one order's receipts](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20order_id%20%3D%20str('0x1b44530319fbffb44ec51e0cec380d6bb019806795a05c064ba28d412a40f0b4')%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)) · [schema, friction, reach, why Arkiv](arkiv/) |
+
+Also in the repo: [architecture and setup](#how-it-works), [limitations](#limitations), the [demo video](https://www.youtube.com/watch?v=ztqHb8Y0Uu0) (3:51, every party on screen), an MIT license, and small commits from kickoff on.
 
 ## License
 MIT, see [`LICENSE`](LICENSE).
