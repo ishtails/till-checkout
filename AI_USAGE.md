@@ -27,7 +27,7 @@
 **Prompts.** The specs in `design/` are what Claude worked from. The chat prompts weren't saved as files.
 
 ## Reused, not written by us
-- Libraries: x402 v2 (`@x402/*`), Privy, viem, the Hiero (Hedera) SDK, the Arkiv SDK, the Model Context Protocol SDK, Hono, React, Vite, Tailwind CSS, zod, Foundry and forge-std.
+- Libraries: x402 v2 (`@x402/*`), Privy, viem, shadcn/ui components on Base UI, Phosphor icons, Inter, the Hiero (Hedera) SDK, the Arkiv SDK, the Model Context Protocol SDK, Hono, React, Vite, Tailwind CSS, zod, Foundry and forge-std.
 - The official test USDT on Whitechain, which we call but didn't write.
 
 ## Assets
