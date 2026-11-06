@@ -1,3 +1,4 @@
+import { AgentConsole } from "./agent"
 import { Checkout } from "./checkout"
 import { Dashboard } from "./dashboard"
 import { Receipt } from "./receipt"
@@ -13,6 +14,7 @@ export function App() {
   if (page === "receipts") return <Receipts address={id || undefined} />
   if (page === "dashboard") return <Dashboard />
   if (page === "signin") return <SignIn />
+  if (page === "agent") return <AgentConsole />
   return (
     <Shell>
       <Muted>Nothing here.</Muted>

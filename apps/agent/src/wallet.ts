@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { guard, type Decision, type Policy } from "@till/guard"
+import { guard, type Approver, type Decision, type Policy } from "@till/guard"
 import { x402Client } from "@x402/core/client"
 import { toClientEvmSigner } from "@x402/evm"
 import { ExactEvmScheme } from "@x402/evm/exact/client"
@@ -41,13 +41,42 @@ const client =
         ],
       })
 
+// Payments above the auto-pay limit go to the owner: filed with Till, answered on the console
+// (pay app /agent) with the owner's wallet signature. The agent waits up to five minutes.
+const API = process.env.TILL_API_URL ?? "http://localhost:3001"
+const approver: Approver | undefined = process.env.AGENT_TOKEN
+  ? {
+      async request(d) {
+        const res = await fetch(`${API}/v1/approvals`, {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization: `Bearer ${process.env.AGENT_TOKEN}` },
+          body: JSON.stringify(d),
+        })
+        if (!res.ok) throw new Error(`couldn't ask the owner: HTTP ${res.status}`)
+        return ((await res.json()) as { id: string }).id
+      },
+      async wait(id) {
+        for (;;) {
+          await Bun.sleep(1500)
+          const a = (await fetch(`${API}/v1/approvals/${id}`).then(r => r.json())) as { status: string; by?: string }
+          if (a.status === "approved") return { approved: true, by: a.by }
+          if (a.status === "denied") return { approved: false, by: a.by }
+          if (a.status === "expired") return { approved: false, reason: "the owner didn't answer within five minutes" }
+        }
+      },
+    }
+  : undefined
+
 // The guard's decision for the call in progress (the agent makes one call at a time).
 let last: { decision: Decision; seq?: string } | undefined
+let approvedBy: string | undefined
 const decision = () => last
 guard(client, {
   policy,
   stateFile: resolve(root, "data/agent-state.json"),
+  approver,
   onDecision: async decision => {
+    if (decision.type === "agent.approved") approvedBy = decision.by
     last = { decision, seq: await logDecision(AGENT, decision) }
     console.error(JSON.stringify({ ...decision, hcsSeq: last.seq }))
   },
@@ -90,6 +119,7 @@ server.registerTool(
   },
   async ({ url }) => {
     last = undefined
+    approvedBy = undefined
     try {
       const res = await paidFetch(url)
       const body = await res.text()
@@ -97,11 +127,15 @@ server.registerTool(
       if (!receipt) return text(`HTTP ${res.status}, nothing paid. Response: ${body}`)
       const settled = decodePaymentResponseHeader(receipt)
       const paid = decision()?.decision
-      return text(`Paid $${paid?.usd ?? "?"} in ${asset} to ${paid?.payTo} (transaction ${settled.transaction}).${logged()} Response: ${body}`)
+      const approval = approvedBy ? ` It was above your auto-pay limit, so your owner approved it first (${approvedBy}).` : ""
+      return text(`Paid $${paid?.usd ?? "?"} in ${asset} to ${paid?.payTo} (transaction ${settled.transaction}).${approval}${logged()} Response: ${body}`)
     } catch (err) {
       const blocked = decision()?.decision
       if (blocked?.type === "agent.blocked") {
         return text(`BLOCKED by your spending policy, nothing was signed or paid: ${blocked.reasons!.join("; ")}.${logged()}`)
+      }
+      if (blocked?.type === "agent.denied") {
+        return text(`NOT PAID: the payment was above your auto-pay limit and ${blocked.reasons!.join("; ")}. Nothing was signed.${logged()}`)
       }
       return text(`The call failed, nothing was paid: ${(err as Error).message}`)
     }

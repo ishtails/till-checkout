@@ -45,6 +45,7 @@ app.get("/signin", async c => c.redirect(await checkout.signInUrl(SHOP_URL + (c.
 
 // Agents: charge per call
 app.use("/api/data", checkout.paywall({ price: "0.05", description: "Rent data, one neighbourhood" }))
+app.use("/api/report", checkout.paywall({ price: "0.25", description: "Mumbai Rent Index, all neighbourhoods" }))
 // ---- end of Till ----
 
 // The API's answer says what each number is, so an agent can quote it without guessing.
@@ -58,6 +59,8 @@ app.get("/api/data", c => {
   const row = area && rentData.find(r => r.area.toLowerCase() === area.toLowerCase())
   return c.json(area ? (row ? forApi(row) : { error: "unknown area" }) : rentData.map(forApi))
 })
+
+app.get("/api/report", c => c.json({ title: "Mumbai Rent Index, Nov 2026", neighbourhoods: rentData.map(forApi) }))
 
 app.onError((err, c) => (err.message.includes("webhook signature") ? c.text("bad signature", 401) : c.text(err.message, 500)))
 

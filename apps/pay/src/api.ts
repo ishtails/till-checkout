@@ -60,6 +60,27 @@ export type RefundInfo = {
   domain: CheckoutInfo["domain"]
 }
 
+export type AgentPolicy = {
+  dailyBudgetUsd: number
+  approvalAboveUsd: number
+  merchants: { name: string; payTo: Record<string, string>; maxPerCallUsd: number; dailyCapUsd: number }[]
+}
+export type AgentInfo = { name: string; owner: string | null; topicId: string | null; policy: AgentPolicy }
+export type Approval = {
+  id: string
+  agent: string
+  usd: string
+  amount: string
+  network: string
+  payTo: string
+  merchant?: string
+  resource?: string
+  status: "pending" | "approved" | "denied" | "expired"
+  createdAt: number
+  decidedAt?: number
+  by?: string
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(API + path, { ...init, headers: { "content-type": "application/json", ...init?.headers } })
   const body = await res.json()
@@ -81,6 +102,10 @@ export const api = {
   signinInfo: (merchant: string) => call<{ merchant: string; name: string }>(`/v1/signin/${merchant}`),
   signin: (body: { merchant: string; address: Address; issuedAt: string; signature: Hex; returnUrl: string }) =>
     call<{ redirect: string }>("/v1/signin", { method: "POST", body: JSON.stringify(body) }),
+  agent: () => call<AgentInfo>("/v1/agent"),
+  approvals: () => call<Approval[]>("/v1/approvals"),
+  decide: (id: string, body: { decision: "approve" | "deny"; address: Address; signature: Hex }) =>
+    call<Approval>(`/v1/approvals/${id}`, { method: "POST", body: JSON.stringify(body) }),
   faucet: () => call<{ enabled: boolean; drip?: string }>("/v1/faucet"),
   drip: (address: Address) =>
     call<{ amount: string; txHash: Hex }>("/v1/faucet", { method: "POST", body: JSON.stringify({ address }) }),

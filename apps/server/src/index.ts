@@ -1,5 +1,6 @@
 import { Hono } from "hono"
 import { cors } from "hono/cors"
+import { approvals } from "./approvals"
 import { config } from "./config"
 import { facilitatorRoutes } from "./facilitator"
 import { faucet } from "./faucet"
@@ -21,6 +22,7 @@ app.route("/", facilitatorRoutes)
 app.route("/", gas)
 app.route("/", faucet)
 app.route("/", signin)
+app.route("/", approvals)
 
 console.log(`Till server on http://localhost:${config.port}`)
 export default { port: config.port, fetch: app.fetch }

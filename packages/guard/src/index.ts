@@ -22,15 +22,24 @@ export type Spent = { day: string; total: number; byMerchant: Record<string, num
 export type PaymentRequest = { network: string; asset: string; amount: string; payTo: string }
 
 export type Decision = {
-  type: "agent.paid" | "agent.blocked"
+  type: "agent.paid" | "agent.blocked" | "agent.approval_requested" | "agent.approved" | "agent.denied"
   network: string
   asset: string
   amount: string
   usd: string
   payTo: string
+  merchant?: string // the allowlisted merchant's name, when the payee is one
   resource?: string
   reasons?: string[]
   tx?: string
+  approvalId?: string
+  by?: string // the owner's wallet that approved or denied
+}
+
+/** Asks the agent's owner about one payment: `request` files it, `wait` resolves with their answer. */
+export type Approver = {
+  request: (d: Decision) => Promise<string>
+  wait: (id: string) => Promise<{ approved: boolean; by?: string; reason?: string }>
 }
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -41,7 +50,9 @@ const add = (a: number, b: number) => Math.round((a + b) * 1e6) / 1e6
 
 /**
  * Checks one payment request against the policy. Every rule is evaluated and every failing
- * reason is returned, in this order (design/04_low_level.md §3). No reasons means it may be paid.
+ * reason is returned, in this order (design/04_low_level.md §3). No reasons means it may be paid,
+ * unless `needsApproval`: then it's allowed but unusual, so the owner decides. A failing rule is
+ * never something the owner can approve.
  */
 export function check(policy: Policy, spent: Spent, req: PaymentRequest) {
   const usd = Number(req.amount) / 1e6
@@ -69,10 +80,10 @@ export function check(policy: Policy, spent: Spent, req: PaymentRequest) {
   if (add(spentToday.total, usd) > policy.dailyBudgetUsd) {
     reasons.push(`would spend ${money(add(spentToday.total, usd))} today, above the ${money(policy.dailyBudgetUsd)} daily budget`)
   }
-  // 6. Human approval: blocked in this demo, there's no approval screen.
-  if (usd > policy.approvalAboveUsd) reasons.push(`needs human approval above ${money(policy.approvalAboveUsd)}`)
+  // 6. Above the auto-pay limit, the owner is asked.
+  const needsApproval = usd > policy.approvalAboveUsd
 
-  return { merchant, usd, reasons }
+  return { merchant, usd, reasons, needsApproval }
 }
 
 /** Adds a settled payment to the day's totals. */
@@ -92,7 +103,7 @@ export function record(spent: Spent, merchant: string, usd: number): Spent {
  */
 export function guard(
   client: x402Client,
-  { policy, stateFile, onDecision }: { policy: Policy; stateFile: string; onDecision?: (d: Decision) => unknown },
+  { policy, stateFile, onDecision, approver }: { policy: Policy; stateFile: string; onDecision?: (d: Decision) => unknown; approver?: Approver },
 ) {
   const load = (): Spent => (existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : { day: today(), total: 0, byMerchant: {} })
 
@@ -101,19 +112,29 @@ export function guard(
 
   client.onBeforePaymentCreation(async ({ paymentRequired, selectedRequirements: r }) => {
     resource = paymentRequired.resource?.url
-    const { usd, reasons } = check(policy, load(), r)
-    if (reasons.length === 0) return
-    await onDecision?.({
-      type: "agent.blocked",
-      network: r.network,
-      asset: r.asset,
-      amount: r.amount,
-      usd: usd.toFixed(2),
-      payTo: r.payTo,
-      resource,
-      reasons,
-    })
-    return { abort: true, reason: `BLOCKED: ${reasons.join("; ")}` }
+    const { merchant, usd, reasons, needsApproval } = check(policy, load(), r)
+    const base = { network: r.network, asset: r.asset, amount: r.amount, usd: usd.toFixed(2), payTo: r.payTo, merchant: merchant?.name, resource }
+    const block = async (why: string[]) => {
+      await onDecision?.({ type: "agent.blocked", ...base, reasons: why })
+      return { abort: true as const, reason: `BLOCKED: ${why.join("; ")}` }
+    }
+    if (reasons.length > 0) return block(reasons)
+    if (!needsApproval) return
+    const limit = `above the ${money(policy.approvalAboveUsd)} auto-pay limit`
+    if (!approver) return block([`${money(usd)} is ${limit} and no one is set up to approve it`])
+
+    // Allowed but unusual: pause and ask the owner. Nothing is signed until they say yes.
+    const ask: Decision = { type: "agent.approval_requested", ...base, reasons: [`${money(usd)} is ${limit}`] }
+    const approvalId = await approver.request(ask)
+    await onDecision?.({ ...ask, approvalId })
+    const answer = await approver.wait(approvalId)
+    if (answer.approved) {
+      await onDecision?.({ type: "agent.approved", ...base, approvalId, by: answer.by })
+      return
+    }
+    const why = answer.reason ?? "the owner denied it"
+    await onDecision?.({ type: "agent.denied", ...base, approvalId, by: answer.by, reasons: [why] })
+    return { abort: true, reason: `DENIED: ${why}` }
   })
 
   client.onPaymentResponse(async ({ requirements: r, settleResponse, paymentRequired }) => {
@@ -122,6 +143,7 @@ export function guard(
     if (merchant) writeFileSync(stateFile, JSON.stringify(record(load(), merchant.name, usd), null, 2))
     await onDecision?.({
       type: "agent.paid",
+      merchant: merchant?.name,
       network: r.network,
       asset: r.asset,
       amount: r.amount,

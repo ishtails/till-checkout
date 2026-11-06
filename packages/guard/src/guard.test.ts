@@ -54,8 +54,15 @@ describe("check", () => {
     expect(check(policy, spent, hedera("50000")).reasons).toEqual(["would spend $1.03 today, above the $1.00 daily budget"])
   })
 
-  test("over $1 needs a human", () => {
-    expect(check(policy, none, hedera("1500000")).reasons).toContain("needs human approval above $1.00")
+  test("above the auto-pay limit but within every rule: the owner is asked", () => {
+    const strict = { ...policy, approvalAboveUsd: 0.04 }
+    expect(check(strict, none, hedera("50000"))).toMatchObject({ reasons: [], needsApproval: true })
+    expect(check(policy, none, hedera("50000")).needsApproval).toBe(false)
+  })
+
+  test("a broken rule is a hard block, even above the auto-pay limit", () => {
+    const strict = { ...policy, approvalAboveUsd: 0.04 }
+    expect(check(strict, none, hedera("50000", "0.0.6660666")).reasons).toEqual(["payee 0.0.6660666 is not on the allowlist"])
   })
 
   test("yesterday's spending doesn't count", () => {

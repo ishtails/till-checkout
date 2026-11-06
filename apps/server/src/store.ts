@@ -38,7 +38,25 @@ export type Settlement = {
   response: unknown // the SettleResponse returned the first time, returned again on a retry
 }
 
+// A payment the agent's guard paused for its owner: allowed by every rule, but above the auto-pay limit.
+export type Approval = {
+  id: string
+  agent: string
+  usd: string
+  amount: string // atomic
+  network: string
+  payTo: string
+  merchant?: string
+  resource?: string
+  status: "pending" | "approved" | "denied" | "expired"
+  createdAt: number // ms
+  decidedAt?: number
+  by?: string // the owner's wallet
+  signature?: string // the owner's signed decision, so anyone can check it
+}
+
 type Data = {
+  approvals: Record<string, Approval>
   orders: Record<string, Order>
   settlements: Record<string, Settlement>
   faucet: Record<string, { tx: Hex; ts: number }> // test-USDT drips, one per address
@@ -46,8 +64,8 @@ type Data = {
 
 // D9: in memory, saved to one JSON file on every change, so it survives restarts.
 function load(): Data {
-  if (!existsSync(config.storeFile)) return { orders: {}, settlements: {}, faucet: {} }
-  return { settlements: {}, faucet: {}, ...JSON.parse(readFileSync(config.storeFile, "utf8")) }
+  if (!existsSync(config.storeFile)) return { orders: {}, settlements: {}, faucet: {}, approvals: {} }
+  return { settlements: {}, faucet: {}, approvals: {}, ...JSON.parse(readFileSync(config.storeFile, "utf8")) }
 }
 
 const data = load()
@@ -71,6 +89,15 @@ export const store = {
   listSettlements: () => Object.values(data.settlements).sort((a, b) => b.ts - a.ts),
   putSettlement(s: Settlement) {
     data.settlements[s.key] = s
+    save()
+  },
+  getApproval: (id: string) => data.approvals[id],
+  listApprovals: (agent: string) =>
+    Object.values(data.approvals)
+      .filter(a => a.agent === agent)
+      .sort((a, b) => b.createdAt - a.createdAt),
+  putApproval(a: Approval) {
+    data.approvals[a.id] = a
     save()
   },
   getDrip: (address: string) => data.faucet[address.toLowerCase()],
