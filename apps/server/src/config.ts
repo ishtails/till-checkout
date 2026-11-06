@@ -19,6 +19,7 @@ export const config = {
   relayerKey: need("RELAYER_PRIVATE_KEY") as Hex,
   hederaFeePayerId: need("HEDERA_FEE_PAYER_ID"),
   hederaFeePayerKey: need("HEDERA_FEE_PAYER_KEY"),
+  faucetKey: process.env.FAUCET_PRIVATE_KEY as Hex | undefined, // optional: no key, no test-USDT button
   arkivKey: process.env.ARKIV_PRIVATE_KEY as Hex | undefined, // optional: no key, no Arkiv receipts
   arkivAccessKey: process.env.ARKIV_ACCESS_KEY ?? "", // "" uses Arkiv's public RPC, which is rate limited
   merchantsFile: resolve(root, process.env.MERCHANTS_FILE ?? "merchants.json"),

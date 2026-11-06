@@ -41,12 +41,13 @@ export type Settlement = {
 type Data = {
   orders: Record<string, Order>
   settlements: Record<string, Settlement>
+  faucet: Record<string, { tx: Hex; ts: number }> // test-USDT drips, one per address
 }
 
 // D9: in memory, saved to one JSON file on every change, so it survives restarts.
 function load(): Data {
-  if (!existsSync(config.storeFile)) return { orders: {}, settlements: {} }
-  return { settlements: {}, ...JSON.parse(readFileSync(config.storeFile, "utf8")) }
+  if (!existsSync(config.storeFile)) return { orders: {}, settlements: {}, faucet: {} }
+  return { settlements: {}, faucet: {}, ...JSON.parse(readFileSync(config.storeFile, "utf8")) }
 }
 
 const data = load()
@@ -70,6 +71,11 @@ export const store = {
   listSettlements: () => Object.values(data.settlements).sort((a, b) => b.ts - a.ts),
   putSettlement(s: Settlement) {
     data.settlements[s.key] = s
+    save()
+  },
+  getDrip: (address: string) => data.faucet[address.toLowerCase()],
+  putDrip(address: string, tx: Hex) {
+    data.faucet[address.toLowerCase()] = { tx, ts: Date.now() }
     save()
   },
 }
