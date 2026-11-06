@@ -8,4 +8,4 @@ export { arkivExplorer, type ReceiptRecord } from "@till/receipts"
 
 // Till's merchant registry, the same list an agent looks sellers up in.
 export const registry = registryReader(import.meta.env.VITE_ARKIV_ACCESS_KEY ?? "")
-export { registryExplorer, type ListingRecord } from "@till/receipts/registry"
+export { entityExplorer, registryExplorer, type ListingRecord } from "@till/receipts/registry"

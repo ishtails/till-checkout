@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { Address, Hex } from "viem"
 import { api, type AgentInfo, type Approval } from "./api"
+import { entityExplorer, registry, type ListingRecord } from "./arkiv"
 import { friendly } from "./lib/errors"
 import { Badge, Button, Card, Logo, Muted, RecordLink } from "./ui"
 
@@ -26,6 +27,8 @@ type Entry = {
   reasons?: string[]
   tx?: string
   by?: string
+  registry?: string // the Arkiv entity the payee was checked against
+  claimed?: string // who the agent thought it was paying
 }
 
 async function readLog(topicId: string): Promise<Entry[]> {
@@ -33,7 +36,9 @@ async function readLog(topicId: string): Promise<Entry[]> {
   const { messages = [] } = (await res.json()) as { messages?: { sequence_number: number; message: string }[] }
   return messages.flatMap(m => {
     try {
-      return [{ ...JSON.parse(atob(m.message)), seq: m.sequence_number }]
+      // Base64 of UTF-8 text: atob alone would garble "…" and other non-ASCII characters.
+      const bytes = Uint8Array.from(atob(m.message), c => c.charCodeAt(0))
+      return [{ ...JSON.parse(new TextDecoder().decode(bytes)), seq: m.sequence_number }]
     } catch {
       return []
     }
@@ -62,6 +67,18 @@ const LABEL: Record<Entry["type"], { text: string; variant: "paid" | "blocked" |
   "agent.denied": { text: "Denied", variant: "blocked", icon: <HandPalmIcon weight="fill" /> },
 }
 
+// Whether the allowlisted merchant is in Till's registry on Arkiv, at the same addresses.
+function OnArkiv({ listing, payTo, loading }: { listing?: ListingRecord; payTo: Record<string, string>; loading: boolean }) {
+  if (loading) return <p className="mt-1 text-xs text-muted-foreground">Checking Arkiv…</p>
+  if (!listing) return <p className="mt-1 text-xs text-destructive">Not listed on Arkiv, so every payment to it is blocked.</p>
+  const matches = Object.entries(payTo).every(([n, a]) => (listing.payTo as Record<string, string>)[n]?.toLowerCase() === a.toLowerCase())
+  return (
+    <RecordLink className="mt-1" href={listing.explorerUrl}>
+      {matches ? "Found on Arkiv, same addresses" : "On Arkiv, but at different addresses"}
+    </RecordLink>
+  )
+}
+
 export function AgentConsole() {
   const { ready, authenticated, login, logout } = usePrivy()
   const { wallets } = useWallets()
@@ -69,6 +86,7 @@ export function AgentConsole() {
   const [info, setInfo] = useState<AgentInfo>()
   const [approvals, setApprovals] = useState<Approval[]>()
   const [log, setLog] = useState<Entry[]>()
+  const [listed, setListed] = useState<ListingRecord[]>()
   const [busy, setBusy] = useState<string>()
   const seen = useRef<Set<string>>(new Set())
 
@@ -77,6 +95,8 @@ export function AgentConsole() {
 
   useEffect(() => {
     api.agent().then(setInfo, e => toast.error(friendly(e.message)))
+    // The same registry the agent finds sellers in, read from Arkiv in the browser.
+    registry.list().then(setListed, () => setListed([]))
   }, [])
 
   // Approvals every 2 s (the agent is waiting); the Hedera log every 4 s.
@@ -243,10 +263,18 @@ export function AgentConsole() {
                             {l.text}
                           </Badge>
                           <span className="text-sm font-medium tabular-nums">{money(e.usd)}</span>
-                          <span className="text-sm text-muted-foreground">to {payee(e)}</span>
+                          <span className="text-sm text-muted-foreground">
+                            to {payee(e)}
+                            {e.claimed && `, posing as ${e.claimed}`}
+                          </span>
                         </div>
                         {e.reasons?.length ? <p className="mt-1 text-xs text-muted-foreground">{e.reasons.join(" · ")}</p> : null}
                         {e.by && <p className="mt-1 text-xs text-muted-foreground">by {short(e.by)}</p>}
+                        {e.registry && (
+                          <RecordLink className="mt-1" href={entityExplorer(e.registry)}>
+                            {e.type === "agent.blocked" || e.type === "agent.denied" ? "Checked against Arkiv" : `Found ${e.merchant ?? "seller"} on Arkiv`}
+                          </RecordLink>
+                        )}
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-muted-foreground">
                         <span>{new Date(e.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
@@ -281,10 +309,11 @@ export function AgentConsole() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     Up to {money(m.maxPerCallUsd)} a call, {money(m.dailyCapUsd)} a day. Pays only {Object.values(m.payTo).map(short).join(" or ")}.
                   </p>
+                  <OnArkiv listing={listed?.find(l => l.name.toLowerCase() === m.name.toLowerCase())} payTo={m.payTo} loading={!listed} />
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">
-                Any other payee, asset or amount over a cap is blocked outright. There's nothing to approve: a broken rule isn't unusual, it's wrong.
+                Every payee is also checked against the seller's record on Arkiv. Any other payee, asset or amount over a cap is blocked outright. There's nothing to approve: a broken rule isn't unusual, it's wrong.
               </p>
             </Card>
           </aside>
