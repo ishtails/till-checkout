@@ -11,7 +11,7 @@ import { entityExplorer, registry, type ListingRecord } from "./arkiv"
 import { readAgent, RESEARCH_AGENT_ID, type AgentIdentity } from "@till/identity"
 import { AccountMenu } from "./account-menu"
 import { friendly } from "./lib/errors"
-import { Badge, Button, Card, Logo, Muted, RecordLink } from "./ui"
+import { Badge, Button, Card, Logo, Muted, RecordLink, Shell } from "./ui"
 
 // The agent owner's console: what the agent spent and was stopped from spending, read from its
 // public log on Hedera, plus the payments it paused for the owner to approve or deny.
@@ -103,7 +103,21 @@ function IdentityCard({ identity, topicId }: { identity?: AgentIdentity | "error
   )
 }
 
-export function AgentConsole() {
+export function AgentConsole({ agentId }: { agentId: string }) {
+  // Till runs one agent in this demo: its console is keyed by its ERC-8004 ID.
+  if (agentId !== RESEARCH_AGENT_ID)
+    return (
+      <Shell>
+        <h1 className="text-xl">No agent #{agentId} on Till</h1>
+        <Muted className="mt-2">
+          The agent console is at <a className="text-brand hover:underline" href={`/agent/${RESEARCH_AGENT_ID}`}>/agent/{RESEARCH_AGENT_ID}</a>.
+        </Muted>
+      </Shell>
+    )
+  return <Console />
+}
+
+function Console() {
   const { ready, authenticated, login, logout, user } = usePrivy()
   const { wallets } = useWallets()
   const { signMessage } = useSignMessage()

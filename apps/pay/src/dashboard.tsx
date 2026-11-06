@@ -52,8 +52,7 @@ function Stat({ icon, label, value, note }: { icon: React.ReactNode; label: stri
 
 // The merchant's view (no login of its own in this demo; see the README). A refund needs the
 // merchant's signature, so the Refund button works only for the wallet the order was paid to.
-export function Dashboard() {
-  const merchantId = new URLSearchParams(location.search).get("merchant") ?? "data-shop"
+export function Dashboard({ merchantId }: { merchantId: string }) {
   const { ready, authenticated, login, logout, user } = usePrivy()
   const { wallets } = useWallets()
   const { signTypedData } = useSignTypedData()

@@ -273,7 +273,7 @@ export function Docs() {
                 <li>Today's total stays within the daily budget.</li>
               </ol>
               <p>
-                <b>Approvals.</b> A payment that passes every rule but is above <code>approvalAboveUsd</code> pauses. The agent files it with Till, and the owner approves or denies it on the <a className="text-brand hover:underline" href="/agent">agent console</a>, signing with their wallet. Till only carries the answer: the guard picks the request's ID itself and checks the signature against its own list of owners, so Till can't approve on the owner's behalf, and an old answer can't be reused. Nothing is signed until an owner says yes. A broken rule can never be approved.
+                <b>Approvals.</b> A payment that passes every rule but is above <code>approvalAboveUsd</code> pauses. The agent files it with Till, and the owner approves or denies it on the <a className="text-brand hover:underline" href="/agent/154">agent console</a>, signing with their wallet. Till only carries the answer: the guard picks the request's ID itself and checks the signature against its own list of owners, so Till can't approve on the owner's behalf, and an old answer can't be reused. Nothing is signed until an owner says yes. A broken rule can never be approved.
               </p>
               <CodeWindow code={policy} filename="policy.json" />
               <p>
