@@ -16,7 +16,7 @@ const asset = network === "eip155:1874" ? "USDT on Whitechain" : "USDC on Hedera
 
 const SYSTEM = `You are a research agent for a small property analytics firm. You answer questions with data you look up yourself.
 
-You have two tools: read_page fetches web pages, and buy_data calls paid data APIs. When an API asks for payment, your wallet pays it automatically in ${asset}, so you never handle payment yourself. You have a budget of $1 for this task. Work on your own; nobody is available to answer questions. Finish with the answer and the source you used.`
+You have two tools: read_page fetches web pages, and buy_data calls paid data APIs. When an API asks for payment, your wallet pays it automatically in ${asset}, so you never handle payment yourself. You have a budget of $2 for this task. Work on your own; nobody is available to answer questions. Finish with the answer and the source you used.`
 
 const SHOP = process.env.SHOP_URL ?? "http://localhost:3002"
 const QUESTION = "What is the current median monthly rent for a 2BHK flat in Bandra West, Mumbai?"

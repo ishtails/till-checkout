@@ -131,7 +131,9 @@ export function AgentConsole() {
   const spent = todays.filter(e => e.type === "agent.paid").reduce((s, e) => s + Number(e.usd), 0)
   const budget = info?.policy.dailyBudgetUsd ?? 0
   const stopped = todays.filter(e => e.type === "agent.blocked" || e.type === "agent.denied").length
-  const payee = (e: { merchant?: string; payTo: string }) => e.merchant ?? short(e.payTo)
+  // Older log entries carry only the address, so name known payees from the policy.
+  const known = (payTo: string) => info?.policy.merchants.find(m => Object.values(m.payTo).some(p => p.toLowerCase() === payTo.toLowerCase()))?.name
+  const payee = (e: { merchant?: string; payTo: string }) => e.merchant ?? known(e.payTo) ?? short(e.payTo)
 
   return (
     <div className="min-h-svh">
