@@ -2,6 +2,7 @@ import { PrivyProvider } from "@privy-io/react-auth"
 import { createRoot } from "react-dom/client"
 import { defineChain } from "viem"
 import { App } from "./app"
+import { Docs } from "./docs"
 import { Landing } from "./landing"
 import { Toaster } from "sonner"
 import "./index.css"
@@ -15,8 +16,9 @@ const whitechain = defineChain({
 })
 
 const root = createRoot(document.getElementById("root")!)
-// The landing page needs no wallet, so it renders without Privy.
+// The landing page and the docs need no wallet, so they render without Privy.
 if (location.pathname === "/") root.render(<Landing />)
+else if (location.pathname.replace(/\/$/, "") === "/docs") root.render(<Docs />)
 else
   root.render(
     <PrivyProvider
