@@ -1,12 +1,12 @@
+
 <img src="assets/logo.png" alt="Till logo: a cash drawer" width="96" align="left">
 
 # Till
-
 Get paid by people and AI agents that can't be tricked into overpaying.
 
-For small online sellers who want to be paid in USDT by people and by AI agents.
-The checkout: people pay with an email and no gas, agents pay per API call with no sign-up, and refunds take one click.
-The spending guard: the agent's limits are checked before anything is signed, and every payment and blocked attempt is a public record.
+For small online sellers who want to be paid in USDT by people and by AI agents. <br/>
+The checkout: people pay with an email and no gas, agents pay per API call with no sign-up, and refunds take one click.<br/>
+The spending guard: the agent's limits are checked before anything is signed, and every payment and blocked attempt is a public record.<br/>
 
 **Try it live: [till.ishtails.xyz](https://till.ishtails.xyz)** · Demo video: _(link added once recorded)_ · Built solo at ETHGlobal Mumbai, 5–7 Nov 2026 · Specs in [`design/`](design/)
 
