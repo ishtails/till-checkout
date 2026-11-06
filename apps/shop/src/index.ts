@@ -98,7 +98,7 @@ for (const [path, type] of Object.entries(files)) {
 }
 
 // Every receipt the customer has from any Till shop lives on Till, read from Arkiv.
-app.get("/receipts", async c => c.redirect(new URL(await checkout.signInUrl(SHOP_URL)).origin + "/receipts"))
+app.get("/receipts", async c => c.redirect(new URL(await checkout.signInUrl(SHOP_URL)).origin + "/account"))
 
 app.get("/signout", c => {
   deleteCookie(c, PASS_COOKIE, { path: "/" })

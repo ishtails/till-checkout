@@ -20,7 +20,7 @@ const short = (s: string) => (s.startsWith("0x") ? `${s.slice(0, 6)}…${s.slice
 const money = (usd: string | number) => `$${Number(usd).toFixed(2)}`
 const today = () => new Date().toISOString().slice(0, 10)
 
-type Entry = {
+export type Entry = {
   seq: number
   ts: string
   type: "agent.paid" | "agent.blocked" | "agent.approval_requested" | "agent.approved" | "agent.denied"
@@ -36,7 +36,7 @@ type Entry = {
   claimed?: string // who the agent thought it was paying
 }
 
-async function readLog(topicId: string): Promise<Entry[]> {
+export async function readLog(topicId: string): Promise<Entry[]> {
   const res = await fetch(`${MIRROR}/topics/${topicId}/messages?order=desc&limit=50`)
   const { messages = [] } = (await res.json()) as { messages?: { sequence_number: number; message: string }[] }
   return messages.flatMap(m => {

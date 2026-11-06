@@ -20,12 +20,14 @@ const titles: Record<string, string> = {
   docs: "Docs · Till",
   checkout: "Checkout · Till",
   receipt: "Receipt · Till",
-  receipts: "Your receipts · Till",
+  receipts: "Receipts · Till",
+  account: "Your account · Till",
   dashboard: "Merchant dashboard · Till",
   signin: "Sign in with Till",
   agent: "Agent console · Till",
 }
-const pageTitle = titles[location.pathname.split("/")[1] ?? ""]
+const [, first, second] = location.pathname.split("/")
+const pageTitle = titles[first === "receipts" && !second ? "account" : (first ?? "")]
 if (pageTitle) document.title = pageTitle
 
 const root = createRoot(document.getElementById("root")!)

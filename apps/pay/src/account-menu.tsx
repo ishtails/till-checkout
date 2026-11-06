@@ -53,8 +53,8 @@ export function AccountMenu({
                 <CopyIcon className="size-4" /> Copy wallet address
               </Menu.Item>
             )}
-            <Menu.Item className={item} onClick={() => location.assign("/receipts")}>
-              <ReceiptIcon className="size-4" /> Your receipts
+            <Menu.Item className={item} onClick={() => location.assign("/account")}>
+              <ReceiptIcon className="size-4" /> Your account
             </Menu.Item>
             <Menu.Item className={item} onClick={onSwitch}>
               <UserSwitchIcon className="size-4" /> Switch account
