@@ -1,7 +1,7 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 
-import { CircleNotchIcon } from "@phosphor-icons/react";
+import { InlineLoader } from "./loader";
 import { cn, useDelayedLoading } from "../../lib/utils";
 
 const buttonVariants = cva(
@@ -73,7 +73,7 @@ function Button({
 		>
 			{showLoadingIndicator ? (
 				<div className="flex items-center gap-2">
-					<CircleNotchIcon className="shrink-0 animate-spin" />
+					<InlineLoader size="sm" className="shrink-0 text-current" />
 					<span className="inline-flex items-center gap-[inherit] [&>svg:first-of-type]:hidden">
 						{children}
 					</span>
