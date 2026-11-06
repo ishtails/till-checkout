@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client"
 import { defineChain } from "viem"
 import { App } from "./app"
 import { Landing } from "./landing"
+import { Toaster } from "sonner"
 import "./index.css"
 
 const whitechain = defineChain({
@@ -29,5 +30,6 @@ else
       }}
     >
       <App />
+      <Toaster position="bottom-center" richColors closeButton />
     </PrivyProvider>,
   )
