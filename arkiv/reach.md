@@ -21,4 +21,4 @@ To run it yourself instead, follow the README's setup steps.
 
 ## After Mumbai
 
-_(Kartik: will you keep building Till after the event, and what's next for it? One or two sentences in your words.)_
+Yes, I'm going to keep building Till. Next on Arkiv: each merchant writes its own receipts and listing with its own key, so the registry and the receipts don't depend on Till's wallet. Beyond Arkiv: move to Whitechain mainnet when it launches, and put Till in front of a few real sellers of data and API calls, to see whether agents actually pay them and what those shops need next.
