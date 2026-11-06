@@ -1,5 +1,6 @@
 import {
   ArrowRightIcon,
+  BookOpenIcon,
   CheckCircleIcon,
   CodeIcon,
   DatabaseIcon,
@@ -155,6 +156,10 @@ export function Landing() {
           <span className="text-base font-semibold tracking-tight">Till</span>
         </span>
         <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => (location.href = "/docs")}>
+            <BookOpenIcon />
+            <span className="hidden sm:inline">Docs</span>
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => (location.href = REPO)}>
             <GithubLogoIcon />
             <span className="hidden sm:inline">GitHub</span>
@@ -373,9 +378,14 @@ export function Landing() {
       <footer className="border-t">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-5 py-6 text-xs text-muted-foreground">
           <span>Built solo by Kartik at ETHGlobal Mumbai, November 2026. Testnet only.</span>
-          <a className="hover:underline" href={REPO}>
-            github.com/ishtails/till-checkout
-          </a>
+          <span className="flex gap-4">
+            <a className="hover:underline" href="/docs">
+              Docs
+            </a>
+            <a className="hover:underline" href={REPO}>
+              github.com/ishtails/till-checkout
+            </a>
+          </span>
         </div>
       </footer>
     </div>
