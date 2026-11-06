@@ -15,11 +15,11 @@
 |---|---|---|
 | `contracts/` | `Checkout.sol` (pay, refund capped at what was paid) and its Foundry tests | Claude wrote it from my spec; I reviewed it, and it's deployed and verified on Whitechain |
 | `apps/server/` | Orders API, relayer, x402 facilitator for Whitechain and Hedera, webhooks, Arkiv writer | Claude wrote it from my spec; I tested it live |
-| `apps/pay/` | Checkout, receipt, "Your receipts" and merchant dashboard pages | Claude wrote it; I tested every flow in the browser |
+| `apps/pay/` | Landing page, docs page, checkout, receipt, "Your receipts", merchant dashboard and agent console | Claude wrote it; I tested every flow in the browser, including approving the agent's payments on the console |
 | `apps/shop/` | The demo shop that uses only the SDK | Claude wrote it; the integration is the ~20 lines between the `Till` markers |
-| `apps/agent/` | The demo agent: Claude on the `claude` CLI, with a wallet tool server | Claude wrote it; I ran the attack and the real payment |
+| `apps/agent/` | The demo agent: Claude on the `claude` CLI, with a wallet tool server, and the ERC-8004 registration script | Claude wrote it; I ran the attack, the real payment and the approval |
 | `apps/attacker/` | The review page and look-alike API for the demo attack | Claude wrote it from my attack design |
-| `packages/sdk`, `packages/guard`, `packages/receipts` | Merchant SDK, the agent's spending rules, the Arkiv receipt schema | Claude wrote them from my spec; the guard's limits are mine (`apps/agent/policy.json`) |
+| `packages/sdk`, `packages/guard`, `packages/receipts`, `packages/identity` | Merchant SDK, the agent's spending rules and signed limits, the Arkiv receipt and registry schemas, the ERC-8004 reader | Claude wrote them from my spec; the guard's limits are mine, set in `apps/agent/policy.json` and signed on the console |
 | `README.md`, `arkiv/`, `WHITECHAIN_FEEDBACK.md` | Docs and sponsor files | Claude drafted them from what we built; I edited them in my own words |
 
 **R&D:** Claude read the sponsors' docs and SDKs with me and ran small test scripts on testnet to check what works: the test USDT's signing domain, facilitator behaviour on expiry and retries, fees, and Arkiv writes and reads. What we learned is in the specs and the feedback files.
@@ -36,4 +36,4 @@
 - The cover and screenshots are real captures of the live site and HashScan; the cover was laid out in HTML by Claude Code from those captures.
 
 ## Claude inside the product
-The demo's AI agent is Claude, run headless on the `claude` CLI with only our two wallet tools. The spending guard (`packages/guard`) sits below the model, in the wallet, and stops it when a page tricks it.
+The demo's AI agent is Claude, run headless on the `claude` CLI with only our three wallet tools. The spending guard (`packages/guard`) sits below the model, in the wallet, and stops it when a page tricks it.

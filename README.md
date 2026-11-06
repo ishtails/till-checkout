@@ -27,51 +27,59 @@ Everything in the demo happened on testnet. Each of these is a link you can open
 | A customer paid $5 with just an email. Our relayer paid the gas; the customer holds no WBT | [Whitechain tx](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) |
 | The merchant refunded in one click, in full | [Whitechain tx](https://explorer.testnet.whitechain.io/tx/0x911cf211e623c0c19a77fe75b10560f97344512f657f5f14abc6dcb03377c8ca) |
 | …or in part: $2, then the remaining $3 | [$2](https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b) · [$3](https://explorer.testnet.whitechain.io/tx/0x21c4d4263a743b34dcef5da098dad9cade4a412c3364075f1e283021014c3419) |
-| A poisoned link sent the AI agent to a look-alike API asking 10× the price. The guard blocked it before signing | [HCS message #6](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/6) |
-| The same agent paid the real shop $0.05 in USDC on Hedera, with no human approving | [HashScan tx](https://hashscan.io/testnet/transaction/0.0.11155223@1793901510.215554723) |
+| A poisoned link sent the AI agent to a look-alike API asking 10× the price. The guard blocked it before signing: wrong payee, not the seller's address on Arkiv, over the per-call cap | [HCS message #26](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/26) |
+| The same agent found the real shop on Arkiv and paid it $0.05 in USDC on Hedera, with no human approving | [HashScan tx](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515) |
+| It asked for the $0.25 whole-city dataset, above its $0.10 auto-pay limit. The owner approved it on the agent console, and it paid | [requested #28](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/28) · [approved #29](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/29) · [HashScan tx](https://hashscan.io/testnet/transaction/0.0.11155223@1793960445.511994869) |
 | An agent paid $0.05 in USDT on Whitechain over x402, through our facilitator | [Whitechain tx](https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20) |
+| The merchant refunded an agent payment from the dashboard, with no gas | [Whitechain tx](https://explorer.testnet.whitechain.io/tx/0x9fb9fb96855ce195d3ed927321db56e359a16bb76b3458b32f5afa7aebfe644c) |
 | The receipt page reads the order (paid $5, refunded $2 and $3) from Arkiv | [Arkiv explorer](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20order_id%20%3D%20str('0x1b44530319fbffb44ec51e0cec380d6bb019806795a05c064ba28d412a40f0b4')%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)) |
 
 ## Built on
 
 | | What Till uses it for | More |
 |---|---|---|
-| **Whitechain** | The money. Customers pay in USDT with no gas, through our relayer and a small verified contract. Merchants refund in full or in part, and export a CSV. Agents pay per call over x402, through our facilitator | [Whitechain](#whitechain) |
-| **Hedera** | The agents. They pay per call in USDC over x402, through a facilitator we run, and every payment and blocked attempt goes on a public HCS log | [Hedera](#hedera) |
-| **Arkiv** | The receipts. One record per payment or refund, read straight from Arkiv by the receipt page and "Your receipts" | [Arkiv](#arkiv) |
+| **Whitechain** | The money. Customers pay in USDT with no gas, through our relayer and a small verified contract. Merchants refund in full or in part, refund agents too, and export a CSV. Agents pay per call over x402, through our facilitator. Merchants prepay their customers' gas from a gas tank | [Whitechain](#whitechain) |
+| **Hedera** | The agents. They pay per call in USDC over x402, through a facilitator we run. Every payment, approval and blocked attempt goes on a public HCS log, and the agent's identity is registered on ERC-8004 | [Hedera](#hedera) |
+| **Arkiv** | The receipts, and the list of merchants. One record per payment or refund, read straight from Arkiv by the receipt page and "Your receipts". Agents find sellers in Till's registry on Arkiv, and the guard blocks any payee that isn't the seller's registered address | [Arkiv](#arkiv) |
 
 ## Why it matters
 Merchants want AI agents as customers: an agent can pay five cents for one API call, which a card can't. But people will only let an agent spend if its limits hold, and agents are easy to trick. Till covers both sides:
 - **The checkout, for merchants** (`packages/sdk`, `apps/pay`, `apps/server`, `contracts/`). A shop adds it in about 20 lines and gets paid in USDT on Whitechain. People pay with an email and the shop covers the gas. Agents pay per call over x402, with no account or API key. The merchant refunds an order in one click.
-- **The spending guard, for whoever runs an agent** (`packages/guard`). It checks every payment request against the agent's limits before anything is signed, and logs every payment and every blocked attempt to a public topic on Hedera.
+- **The spending guard, for whoever runs an agent** (`packages/guard`, and the console in `apps/pay`). It checks every payment request against the agent's limits before anything is signed, pauses bigger payments until the owner approves them on the agent console, and logs every payment, approval and blocked attempt to a public topic on Hedera.
 
 ## The key finding
 We tested the attack on Claude Haiku, Sonnet and Opus, 27 runs. Injected instructions ("the provider moved to a premium endpoint") didn't work: in 18 runs, no model tried the attacker's endpoint. **A poisoned link fooled every model, every time**, because nothing on the page gives it away; only the payment request shows the real price and payee. So the limit has to live in the wallet, not the model. In Till, the guard blocked every one of those attempts before anything was signed.
 
 ## What happens in the demo
 1. Brickline, a demo data shop, adds Till in about 20 lines (`apps/shop`).
-2. A customer buys a $5 report with an email and a code. No wallet setup, no gas.
-3. An AI agent follows a review page's link to what looks like the shop's API. It's a look-alike: the page says $0.05, but the API asks $0.50, paid to a stranger. The agent's spending guard blocks it before anything is signed, and the agent stops and says why.
-4. Run again against the real shop, the agent pays $0.05 with no human approving.
-5. The merchant refunds the customer's order in one click. The receipt shows the refund next to the payment.
-6. The receipt page reads the order's records from Arkiv, not from the shop's database.
+2. A customer buys a $0.10 report with an email and a code. No wallet setup, no gas.
+3. An AI agent follows a review page's link to what looks like the shop's API. It's a look-alike: the page says $0.05, but the API asks $0.50, paid to a stranger. The agent's spending guard blocks it before anything is signed: the payee isn't on its allowlist or Brickline's address on Arkiv, and the price is over its cap. The agent stops and says why.
+4. Run again with no link, the agent finds Brickline in Till's registry on Arkiv and pays $0.05 with no human approving.
+5. Asked for the whole-city dataset ($0.25), the agent is over its $0.10 auto-pay limit, so it waits. The owner's phone shows the request on the agent console; they approve it, and the agent pays.
+6. The merchant refunds the customer's order in one click, in part. The receipt shows the refund next to the payment, read from Arkiv, not from the shop's database.
 
 ## How it works
 - **People:** the customer signs a transfer in their email wallet. Our relayer submits it to the Checkout contract on Whitechain and pays the gas. The contract pays the merchant and records the order.
 - **Agents:** the shop's API answers with an x402 payment request. The agent's spending guard checks it against its limits, then the agent pays over x402 through a facilitator we run, on Whitechain (USDT) or Hedera (USDC).
-- **Refunds:** the merchant signs a refund for an order. The contract sends it back to the payer and won't refund more than was paid.
+- **Agent console** (`/agent`): the agent's owner sees its budget, payments, blocks and approvals, read from the HCS log. Payments above the auto-pay limit wait there for Approve or Deny; the owner's wallet signs the decision, so nobody else can approve. The owner also sets the limits here by signing them, and the agent checks that signature itself, so Till can't loosen them.
+- **Refunds:** the merchant signs a refund for an order. The contract sends it back to the payer and won't refund more than was paid. An agent's Whitechain payment is refunded the same way, as a USDT transfer back to the agent's wallet that our relayer submits.
 - **Receipts:** after each payment or refund, the server saves a record of it on Arkiv. The customer's receipt page reads them from there.
+- **Merchant registry:** Till lists every merchant on Arkiv: what it sells, the price of each call and the address it's paid at. The agent finds sellers there, and the guard checks every payee against it.
+- **Gas tank:** each merchant prepays its customers' and agents' gas in USDT, charged at cost plus 10%. New merchants start with $5 of credit; when the tank is empty, the relayer pauses that merchant's payments until it's topped up.
+- **Docs:** [till.ishtails.xyz/docs](https://till.ishtails.xyz/docs) covers the quickstart, the SDK, webhooks, x402, the guard, refunds, Arkiv, the gas tank and the endpoints.
 - **Sign in with Till:** the shop never runs accounts. After paying, Till sends the customer back with a pass, signed with the shop's webhook secret, that names the wallet that paid. On another device the customer signs in on Till with their email and their wallet signs a short message; Till checks it and returns the same kind of pass, only to the shop's own site. The demo shop opens the report and its CSV only for the wallet that paid (`checkout.paidBy(orderId, pass)`), so a shared link shows a sign-in page, not the report. Checked end to end in [`apps/server/scripts/signin-check.ts`](apps/server/scripts/signin-check.ts).
 
 | Piece | Folder | What it is |
 |---|---|---|
 | Checkout server | `apps/server` | Orders API, the Whitechain relayer and x402 facilitator, the Hedera x402 facilitator, webhooks, a JSON store |
 | Checkout contract | `contracts/` | `Checkout.sol` on Whitechain: `pay` and `refund` |
-| Pay app | `apps/pay` | Checkout page, receipt page and merchant dashboard |
+| Pay app | `apps/pay` | Landing page, docs, checkout, receipt pages, merchant dashboard and agent console |
 | Merchant SDK | `packages/sdk` | `createOrder`, `verifyWebhook`, `paywall()` |
-| Spending guard | `packages/guard` | The agent's payment rules, checked before signing |
+| Spending guard | `packages/guard` | The agent's payment rules, checked before signing, and the owner-signed limits |
+| Receipts and registry | `packages/receipts` | The Arkiv schemas for receipts and merchant listings, with their readers |
+| Agent identity | `packages/identity` | Reading and checking the agent's ERC-8004 entry on Hedera |
 | Demo shop | `apps/shop` | A separate data seller that uses only the SDK |
-| Agent | `apps/agent` | A headless Claude run with a "wallet" tool server that holds the keys, the x402 client and the guard |
+| Agent | `apps/agent` | A headless Claude run with a "wallet" tool server that holds the keys, the x402 client and the guard, and finds sellers on Arkiv |
 | Attacker page | `apps/attacker` | A review page with a look-alike link, and an API that asks 10× the price |
 
 ```mermaid
@@ -85,13 +93,15 @@ flowchart LR
   end
   R -- pays gas --> WC[(Whitechain<br/>Checkout contract, USDT)]
   R -- pays fee --> HE[(Hedera<br/>USDC)]
-  A -- every payment and block --> T[(Hedera HCS<br/>spending log)]
-  R -- receipt after each payment / refund --> AR[(Arkiv<br/>receipts)]
+  O[Owner<br/>agent console] -- signs approvals and limits --> R
+  A -- every payment, approval and block --> T[(Hedera HCS<br/>spending log)]
+  R -- receipt after each payment / refund --> AR[(Arkiv<br/>receipts, merchant registry)]
+  A -- finds sellers, checks payees --> AR
   AR -- read in the browser --> P[Receipt page,<br/>Your receipts]
 ```
 
 ## Whitechain
-**In short:** a verified Checkout contract, gasless USDT payments in the main flow, a ~20-line integration, merchant and customer views, refunds and an accountant's export, and an honest look at who pays the gas. What it was like to build: [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md).
+**In short:** a verified Checkout contract, gasless USDT payments in the main flow, a ~20-line integration, merchant and customer views, refunds for people and agents, an accountant's export, and a gas tank the merchant prepays. What it was like to build: [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md).
 
 - Checkout contract (verified): [`0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6`](https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6)
 - Customer's gasless USDT payment: [`0x4646…7316`](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) ($5 from an email wallet on the checkout page, sent by our relayer; the customer holds no WBT). The first one, by script: [`0x93f3…6ab3`](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)
@@ -99,16 +109,15 @@ flowchart LR
 - Partial refunds, the merchant types an amount: [$2](https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b), then [the remaining $3](https://explorer.testnet.whitechain.io/tx/0x21c4d4263a743b34dcef5da098dad9cade4a412c3364075f1e283021014c3419), of a $5 order paid in [`0x05dd…b76a`](https://explorer.testnet.whitechain.io/tx/0x05dd3b8e645f109c5faed70d6722b44fd4b2b6e5c0d6a84be6ffd9df57c4b76a). Each refund signature is good for one step of one order, and the total can't pass what was paid
 - For the accountant: **Download CSV** on the dashboard gives one row per payment, refund (negative) and agent payment, each with its explorer link
 - Agent's x402 payment through our facilitator: [`0xb2f5…eb20`](https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20) ($0.05 for one call to `/api/data`, straight to the merchant; the agent holds no WBT)
+- Refund of an agent payment, from the dashboard: [`0x9fb9…644c`](https://explorer.testnet.whitechain.io/tx/0x9fb9fb96855ce195d3ed927321db56e359a16bb76b3458b32f5afa7aebfe644c). The merchant signs a USDT transfer back to the agent's wallet and our relayer submits it, so the merchant pays no gas; the total can't pass what the agent paid. Agent payments on Hedera are refunded from the merchant's own Hedera wallet
 
 **Why this needs on-chain stablecoin settlement on Whitechain.** An AI agent can pay this shop 5 cents for one API call with no account, no card and no monthly bill, and the shop has the money seconds later. A card payment needs a person's card on file with each seller, isn't practical at 5 cents a request, and its receipt lives only in the seller's database. Here the payment, its receipt and the refund linked to it are public records the customer can check without trusting the shop or us. Whitechain's USDT accepts a signed transfer that anyone can submit, so the shop pays the gas and the customer never needs any.
 
-**Who pays the gas.** Our relayer pays it, and the merchant covers that cost the way it covers card fees. One payment through the Checkout contract costs about 0.0009 WBT (183k gas at 5 gwei, [measured](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)). On testnet the relayer's WBT comes from the faucet, 0.5 WBT a day, which is about 500 payments. In production the merchant tops up a gas deposit.
+**Who pays the gas.** Our relayer pays it, and the merchant covers that cost the way it covers card fees. One payment through the Checkout contract costs about 0.0009 WBT (183k gas at 5 gwei, [measured](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)). On testnet the relayer's WBT comes from the faucet, 0.5 WBT a day, which is about 500 payments.
 
-**The gas meter.** The merchant dashboard shows what the relayer has spent for that shop, read from each transaction's receipt on chain. So far for the demo shop: 0.0078 WBT across 5 payments, 4 refunds and 3 agent payments, about 0.00065 WBT each. That's the number a merchant needs to fund it in real life, in one of two ways:
-- **A prepaid gas deposit:** the merchant sends WBT (or USDT we swap to WBT) to its own balance, and the meter draws it down. At 0.00065 WBT a transaction, 1 WBT covers about 1,500.
-- **A small fee per payment:** taken in USDT from what the merchant receives, like a card fee, and used to buy WBT for the relayer. The merchant never holds WBT.
+**The gas tank.** The merchant prepays gas in USDT, so it never holds WBT either. Each transaction the relayer sends for that shop is charged at its real fee, read from the receipt on chain and priced in dollars, plus 10%, which is how Till earns on it. New merchants start with $5 of credit. **Top up** on the dashboard is a USDT transfer the merchant signs and our relayer submits, so topping up costs no gas either. When the tank is empty, the relayer pauses that merchant's payments with a clear error until it's topped up. The demo shop right now: $0.87 charged across 23 transactions, $4.13 left, about 109 more transactions (`GET /v1/gas-tank?merchant=data-shop`). The WBT price is set in config (`GAS_WBT_USD`, $55 here), since testnet WBT has no market price.
 
-Either way the customer and the agent never need WBT, and the per-merchant daily cap (rule 6 below) limits what one merchant can spend.
+The customer and the agent never need WBT, and the per-merchant daily cap (rule 6 below) limits what one merchant can spend.
 
 **What stops someone draining the relayer:**
 1. It signs only three calls: `Checkout.pay`, `Checkout.refund` and USDT `transferWithAuthorization`.
@@ -122,40 +131,51 @@ Either way the customer and the agent never need WBT, and the per-merchant daily
 What worked and where I got stuck on Whitechain: [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md).
 
 ## Hedera
-**In short:** an x402 endpoint that settles in USDC on Hedera through our own facilitator, an agent that pays with no human approving, the spending limits it can't talk its way past, and a public HCS log of everything it paid or was stopped from paying.
+**In short:** an x402 endpoint that settles in USDC on Hedera through our own facilitator, an agent that pays with no human approving, the spending limits it can't talk its way past, human approval above an amount, a public HCS log of everything it paid, was approved for or was stopped from paying, and the agent's identity on ERC-8004.
 
 - x402 endpoint: `GET /api/data` on the demo shop. Its 402 offers USDT on Whitechain and USDC on Hedera, and the agent picks one.
 - Agent's x402 payment through our facilitator: [`0.0.11155223@1793899446.429788504`](https://hashscan.io/testnet/transaction/0.0.11155223@1793899446.429788504) ($0.05 in testnet USDC for one call to `/api/data`, straight to the merchant `0.0.11155222`; our fee payer `0.0.11155223` paid the 0.016 HBAR fee, the agent paid none)
 - Facilitator: ours (`apps/server`). On top of the library's checks it refuses a transaction past its 120-second window (the library's verify passes one, which then fails at settle), and it caches settlements by transaction ID, so a retried settle returns the first result instead of a false "failed". Fallback: x402.org, one line of config
-- Agent spending log (HCS topic): [`0.0.11155231`](https://hashscan.io/testnet/topic/0.0.11155231). The Claude agent's blocked attempt is [message #6](https://hashscan.io/testnet/topic/0.0.11155231) and its $0.05 payment is message #7 ([transaction](https://hashscan.io/testnet/transaction/0.0.11155223@1793901510.215554723))
+- Agent spending log (HCS topic): [`0.0.11155231`](https://hashscan.io/testnet/topic/0.0.11155231). The latest full run: the blocked attempt is message #26, the $0.05 payment #27 ([transaction](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515)), and the $0.25 approval #28–30 (requested, approved, [paid](https://hashscan.io/testnet/transaction/0.0.11155223@1793960445.511994869))
 
-**Agent identity (ERC-8004).** The agent is [agent #154](https://hashscan.io/testnet/contract/0x8004A818BFB912233c491871b3d84c89A494BD9e) in the ERC-8004 Identity Registry already deployed on Hedera testnet. Its owner holds the entry ([registration](https://hashscan.io/testnet/transaction/0x6a36a9bf4eee48da31e9140db458ce767786403879966f3a6db59281bef76a4b)), with the HCS log topic and the agent's Hedera account as metadata. The Whitechain wallet it pays from signed that it belongs to the agent, and the owner recorded it ([transaction](https://hashscan.io/testnet/transaction/0xd9fffa6824292017f84b9aa19d4fb29ed7e716ccb09d3578a30577b7d7bfd6b8)). The agent puts its ID in every x402 payment's `extensions` and on every log message. After settling, Till checks the payer against the registry and the dashboard shows "Verified agent #154 · owner 0xFBF9…" on that payment. The ID alone proves nothing: the same ID from another wallet doesn't verify. Code: [`packages/identity`](packages/identity), [`apps/server/src/identity.ts`](apps/server/src/identity.ts); setup: [`apps/agent/scripts/identity-register.ts`](apps/agent/scripts/identity-register.ts).
+**Agent identity (ERC-8004).** The agent is [agent #154](https://hashscan.io/testnet/contract/0x8004A818BFB912233c491871b3d84c89A494BD9e) in the ERC-8004 Identity Registry already deployed on Hedera testnet. Its owner holds the entry ([registration](https://hashscan.io/testnet/transaction/0x6a36a9bf4eee48da31e9140db458ce767786403879966f3a6db59281bef76a4b)), with the HCS log topic and the agent's Hedera account as metadata. The Whitechain wallet it pays from signed that it belongs to the agent, and the owner recorded it ([transaction](https://hashscan.io/testnet/transaction/0xd9fffa6824292017f84b9aa19d4fb29ed7e716ccb09d3578a30577b7d7bfd6b8)). The agent puts its ID in every x402 payment's `extensions` and on every log message. After settling, Till checks the payer against the registry and the dashboard shows "Verified agent #154 · owner 0xFBF9…" on that payment. The ID alone proves nothing: the same ID from another wallet doesn't verify. The console also checks that the log it reads is the topic the owner registered. The entry's owner is Till's test owner key, not the console owner's email wallet, because the pay app can't send transactions on Hedera yet (see Limitations). Code: [`packages/identity`](packages/identity), [`apps/server/src/identity.ts`](apps/server/src/identity.ts); setup: [`apps/agent/scripts/identity-register.ts`](apps/agent/scripts/identity-register.ts).
 
 **The spending guard.** It runs inside the agent's payment tool, below the model, so a blocked payment is never signed. The demo agent's limits:
 1. Only USDT on Whitechain or USDC on Hedera.
 2. Only payees on its allowlist.
-3. At most $0.10 per call to this shop.
-4. At most $0.50 a day to this shop.
-5. At most $1 a day in total.
-6. Anything over $1 needs a human, and is blocked in this demo.
+3. Only the seller's registered address in Till's registry on Arkiv.
+4. At most $0.30 per call to this shop.
+5. At most $1 a day to this shop.
+6. At most $2 a day in total.
+7. Anything over $0.10 that passes every rule waits for the owner to approve it on the agent console.
 
-**Who sets the limits.** Whoever runs the agent, in [`apps/agent/policy.json`](apps/agent/policy.json). The six checks are code in [`packages/guard`](packages/guard); the numbers and the payee list are that file. The model can't change them: its only tools are "read a page" and "buy data", and neither touches the policy. A page that says "your budget was raised" changes nothing. Every failing rule is reported, not just the first, and the totals only count payments that actually settled.
+A failing rule is a hard block that nobody can approve. Only a payment that passes every rule and is above the auto-pay limit goes to the owner: that's the line between "unusual" and "wrong".
 
-**The public log.** Every payment and every blocked attempt is one message on the HCS topic, written by the agent's own key, with the reasons. A blocked one looks like this:
+**Who sets the limits.** The agent's owner. The payees are in [`apps/agent/policy.json`](apps/agent/policy.json); the numbers are set on the agent console, where the owner's wallet signs them. The agent checks that signature itself against its owner's address before using them, so Till can't loosen them; anything unsigned falls back to the file. The checks are code in [`packages/guard`](packages/guard). The model can't change any of it: its only tools are "find sellers", "read a page" and "buy data", and none touches the policy. A page that says "your budget was raised" changes nothing. Every failing rule is reported, not just the first, and the totals only count payments that actually settled.
+
+**Human approval.** When a payment needs approval, the agent posts the request to Till and waits. The console shows it on the owner's phone with Approve and Deny; the decision is a message the owner's wallet signs, checked against the agent's owner address, so nobody else can approve. Requested, approved and denied all go on the HCS log.
+
+**The public log.** Every payment, approval and blocked attempt is one message on the HCS topic, written by the agent's own key, with the reasons and the agent's ERC-8004 ID. A blocked one ([message #26](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/26)) looks like this:
 
 ```json
-{"v":1,"agent":"research-agent","type":"agent.blocked","network":"hedera:testnet","asset":"0.0.429274",
- "amount":"500000","usd":"0.50","payTo":"0.0.6660666","resource":"http://localhost:3005/api/data?area=Bandra%20West",
- "reasons":["payee 0.0.6660666 is not on the allowlist","$0.50 is above the $0.10 per-call cap"]}
+{"v":1,"agent":"research-agent","agentId":"154","type":"agent.blocked","network":"hedera:testnet","asset":"0.0.429274",
+ "amount":"500000","usd":"0.50","payTo":"0.0.6660666","claimed":"Brickline","resource":"http://localhost:3005/api/data?area=Bandra%20West",
+ "reasons":["payee 0.0.6660666 is not on the allowlist","payee 0.0.6660666 isn't Brickline's registered address on Arkiv (entity 0x2b22…fdc2)","$0.50 is above the $0.30 per-call cap"]}
 ```
 
-**The spend report.** After each run the agent prints what it paid, what was blocked and how much of the day's budget is left. It reads those entries back from Hedera's public mirror node, not from its own memory, and links each one:
+**The spend report.** After each run the agent prints what it paid, what was approved, what was blocked and how much of the day's budget is left. It reads those entries back from Hedera's public mirror node, not from its own memory, and links each one. For the latest full run:
 
 ```
 Spend report (read back from the public log on Hedera)
-  Blocked  $0.50 to 0.0.6660666: payee 0.0.6660666 is not on the allowlist; $0.50 is above the $0.10 per-call cap
-           https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/9
-  This run: $0.00 paid, 1 blocked. Today: $0.20 of the $1.00 budget, $0.80 left.
+  Paid     $0.05 to 0.0.11155222 on hedera:testnet
+           https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/27
+  Paid     $0.25 to 0.0.11155222 on hedera:testnet
+           https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/30
+  Approved $0.25 to Brickline by the owner 0xFBF9fF639F5A3d6D28a778aDBac30a1415C11D88
+           https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/29
+  Blocked  $0.50 to 0.0.6660666: payee 0.0.6660666 is not on the allowlist; payee 0.0.6660666 isn't Brickline's registered address on Arkiv (entity 0x2b22…fdc2); $0.50 is above the $0.30 per-call cap
+           https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/26
+  This run: $0.30 paid, 1 blocked. Today: $1.15 of the $2.00 budget, $0.85 left.
 ```
 
 **Why the limit lives in the wallet, not the model:** see [The key finding](#the-key-finding). The guard blocked every poisoned-link run, and every agent stopped and explained why.
@@ -165,7 +185,12 @@ Spend report (read back from the public log on Hedera)
 > My wallet blocked the payment, so nothing was paid […] it asked for **$0.50**, 10 times the listed price. It also asked to be paid to an account (`0.0.6660666`) that isn't on my approved list. […] I didn't try to get around the block.
 
 ## Arkiv
-**In short:** every payment and refund is saved on Arkiv, and the customer's receipt pages read from there. The writer wallet and a query to run are below; the schema and notes are in [`/arkiv`](arkiv/).
+**In short:** every payment and refund is saved on Arkiv, and the customer's receipt pages read from there. Till also lists every merchant on Arkiv, and agents find sellers there; the guard blocks any payee that isn't the seller's registered address. The writer wallet and the queries to run are below; the schemas and notes are in [`/arkiv`](arkiv/).
+
+**The merchant registry.** On start, the server lists each merchant on Arkiv (`till.merchant`): name, category, each paid endpoint with its price, and the address it's paid at on each network, updated in place when it changes ([`apps/server/src/registry.ts`](apps/server/src/registry.ts), schema in [`packages/receipts/src/registry.ts`](packages/receipts/src/registry.ts)). Brickline's entry is entity `0x2b22a7b395f4d97cef1632c54ea44733bab048ee2e0aae80ec6ea0ff996efdc2`. It's used in three places:
+- the agent's `find_sellers` tool queries it by category, so the agent finds the shop with no link to follow;
+- the guard checks each 402's payee against the seller's record, so the look-alike's address is blocked with a reason naming the Arkiv entity;
+- the landing page's "Merchants on Till" list and the agent console read it in the browser.
 
 Every payment and refund is saved as a receipt record on Arkiv (Rabdi testnet). The customer's receipt page and "Your receipts" read those records straight from Arkiv in the browser, so what the customer sees doesn't depend on the shop's database or on our server.
 
@@ -210,21 +235,24 @@ For the agent demo, also run the attacker (`bun run --cwd=apps/attacker start`: 
 ```bash
 cd apps/agent
 bun --env-file=../../.env src/run.ts attack   # follows the review page's link; the guard blocks it
-bun --env-file=../../.env src/run.ts real     # pays the real shop $0.05 in USDC on Hedera
+bun --env-file=../../.env src/run.ts real     # finds the shop on Arkiv, pays $0.05 in USDC on Hedera
+bun --env-file=../../.env src/run.ts full     # buys the $0.25 dataset: waits for the owner's approval
 NETWORK=eip155:1874 bun --env-file=../../.env src/run.ts real   # the same, in USDT on Whitechain
 ```
 
-It needs the `claude` CLI, logged in. The agent's Hedera account needs testnet USDC and a little HBAR for the log.
+It needs the `claude` CLI, logged in. The agent's Hedera account needs testnet USDC and a little HBAR for the log. Approve the `full` run on the agent console at http://localhost:5173/agent, signed in as a wallet in `AGENT_OWNER`.
 
 **The merchant's integration** is the block between the two `Till` markers in [`apps/shop/src/index.ts`](apps/shop/src/index.ts): create an order and redirect to it, then unlock the report when the signed `order.paid` webhook arrives.
 
 ## What's mocked
-- The customer's wallet is funded before the demo. In real use they'd withdraw USDT from an exchange to it.
-- The merchant dashboard has no login. Refunds need the merchant's signature anyway.
-- "Needs human approval" blocks the payment. There's no approval screen.
+- The customer's test USDT comes from the demo's faucet (0.2 USDT per new wallet). In real use they'd withdraw USDT from an exchange to it.
+- The merchant dashboard has no login. Refunds and top-ups need the merchant's signature anyway.
+- WBT's price for the gas tank is set in config, since testnet WBT has no market price.
 
 ## Limitations
-- Agent payments over x402 are final, so Till can't refund them yet.
+- Agent payments on Hedera are refunded from the merchant's own Hedera wallet, not from the dashboard. Whitechain ones refund in one click.
+- The agent's ERC-8004 entry is owned by Till's test owner key, not the console owner's email wallet, because the pay app can't send transactions on Hedera yet. Both wallets are the agent's owners for approvals and limits.
+- Only Till's server writes receipts and registry entries on Arkiv. Next: each merchant writes with its own key.
 - Testnet only, one merchant in the demo.
 
 ## Decisions log
@@ -239,7 +267,12 @@ It needs the `claude` CLI, logged in. The agent's Hedera account needs testnet U
 - **Stack: a Bun monorepo** with a Hono server, a Vite + React app for checkout and dashboard, and a separate demo shop.
 - **Ports:** server 3001, pay app 5173, shop 3002, attacker review page 3004, look-alike API 3005. The agent has no port: it's a CLI run.
 - **The demo attack is a poisoned link, not an injected instruction.** Current models ignored injected instructions in every test run, so a demo built on that wouldn't reproduce.
-- **The agent runs on the `claude` CLI's login**, with its own system prompt and only the wallet's two tools, so no API key is needed.
+- **The agent runs on the `claude` CLI's login**, with its own system prompt and only the wallet's three tools (`find_sellers`, `read_page`, `buy_data`), so no API key is needed.
+- **Human approval is a third outcome, not a looser rule.** A payment that breaks a rule is blocked outright; only one that passes every rule and is above the auto-pay limit goes to the owner.
+- **The owner signs the agent's limits, and the agent checks the signature**, so Till hosts them but can't change them.
+- **Sellers come from a registry on Arkiv, not from links.** The guard checks every payee against it, which is what stops the look-alike even when the agent trusts the page.
+- **Gas is prepaid by the merchant in USDT, at cost plus 10%.** The customer and the agent never hold WBT, and Till earns on the margin.
+- **Agent identity uses ERC-8004 on Hedera testnet**, where the registry is already deployed. It ties the agent to the wallet it pays from with that wallet's own signature, which an HCS-14 ID alone can't do.
 
 ## License
 MIT, see [`LICENSE`](LICENSE).
