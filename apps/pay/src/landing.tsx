@@ -6,6 +6,7 @@ import {
   DatabaseIcon,
   EnvelopeSimpleIcon,
   GithubLogoIcon,
+  PlayCircleIcon,
   ProhibitIcon,
   ReceiptIcon,
   RobotIcon,
@@ -21,6 +22,7 @@ import { Badge, Button, Card, RecordLink } from "./ui"
 
 const SHOP = import.meta.env.VITE_SHOP_URL ?? "http://localhost:3002"
 const REPO = "https://github.com/ishtails/till-checkout"
+const VIDEO_ID = "ztqHb8Y0Uu0"
 const WX = "https://explorer.testnet.whitechain.io/tx/"
 
 const integration = `import { Checkout } from "@till/sdk"
@@ -186,6 +188,10 @@ export function Landing() {
               See the demo
               <ArrowRightIcon />
             </Button>
+            <Button variant="outline" size="lg" onClick={() => document.getElementById("video")?.scrollIntoView({ behavior: "smooth" })}>
+              <PlayCircleIcon />
+              Watch the video
+            </Button>
             <Button variant="outline" size="lg" onClick={() => (location.href = REPO)}>
               <GithubLogoIcon />
               Read the code
@@ -242,6 +248,21 @@ export function Landing() {
             <p className="mt-4 text-primary-foreground/40"># all of it is on a public log on Hedera</p>
           </div>
         </motion.div>
+
+        <Section id="video" eyebrow="Demo video" title="See it work, in under four minutes.">
+          <div className="mt-8 aspect-[1920/1136] overflow-hidden rounded-2xl bg-black ring-1 ring-foreground/10">
+            {/* youtube-nocookie: no cookies until someone presses play. */}
+            <iframe
+              className="size-full"
+              src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?rel=0`}
+              title="Till demo video"
+              loading="lazy"
+              allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
+          </div>
+        </Section>
 
         <Section eyebrow="Two halves" title="A checkout for the shop, and a spending guard for the agent.">
           <StaggerGrid className="mt-8 grid gap-4 sm:grid-cols-2">
