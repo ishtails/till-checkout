@@ -55,7 +55,7 @@ const utf8 = (v: Hex | Uint8Array) => (typeof v === "string" ? hexToString(v) : 
 
 /** Rabdi's entity explorer, opened on one entity. */
 export const entityExplorer = (key: string) =>
-  `https://rabdi.explorer.arkiv.network/entity-explorer?q=${encodeURIComponent(`$key = ${key}`)}`
+  `https://rabdi.explorer.arkiv.network/entity-explorer?q=${encodeURIComponent(`$key = key(${key})`)}`
 
 /** The query an agent runs, written out for the explorer: every Till merchant, or one category. */
 export const registryQuery = (category?: string) =>
