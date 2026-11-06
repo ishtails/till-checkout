@@ -86,7 +86,8 @@ for (const [path, type] of Object.entries(files)) {
 
 app.get("/signout", c => {
   deleteCookie(c, PASS_COOKIE, { path: "/" })
-  return c.redirect("/")
+  // "Switch account" signs out here, then goes through Till's sign-in, where you can pick another.
+  return c.redirect(c.req.query("switch") ? "/signin?next=/" : "/")
 })
 
 // "My purchases": everything this wallet bought here, from Till. The shop keeps no accounts.

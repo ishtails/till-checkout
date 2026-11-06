@@ -55,6 +55,17 @@ const layout = (title: string, body: unknown, user?: string) => html`<!doctype h
         nav .right { display: flex; align-items: center; gap: 22px; }
         .account { display: flex; align-items: center; gap: 14px; font-size: 14px; color: var(--muted); }
         .account a { text-decoration: none; } .account a:hover { color: var(--ink); }
+        .me { position: relative; }
+        .me summary { list-style: none; cursor: pointer; }
+        .me summary::-webkit-details-marker { display: none; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--till); color: #fff; display: grid; place-items: center; font-weight: 600; font-size: 14px; }
+        .menu { position: absolute; right: 0; top: 44px; z-index: 10; width: 230px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: 0 10px 30px rgba(27, 24, 19, 0.12); }
+        .menu p { margin: 0; padding: 0 10px; }
+        .menu-who { padding-top: 8px !important; font-size: 13px; color: var(--ink); font-weight: 500; }
+        .menu-wallet { padding-bottom: 6px !important; font: 12px ui-monospace, Menlo, monospace; color: var(--muted); }
+        .menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+        .menu a { display: block; padding: 7px 10px; border-radius: 8px; color: var(--ink); font-size: 14px; }
+        .menu a:hover { background: var(--accent-soft); }
         .account .who { font-family: ui-monospace, Menlo, monospace; font-size: 13px; background: #fff; border: 1px solid var(--line); padding: 3px 8px; border-radius: 99px; color: var(--ink); }
         .till-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--till); color: #fff !important; padding: 8px 14px; border-radius: 10px; font-weight: 600; font-size: 14px; }
         .till-btn:hover { filter: brightness(1.1); }
@@ -108,13 +119,30 @@ const layout = (title: string, body: unknown, user?: string) => html`<!doctype h
             <div class="links"><a href="/#report">The report</a><a href="/#api">For AI agents</a></div>
             <div class="account">
               ${user
-                ? html`<span class="who" title="${user}">${short(user)}</span><a href="/purchases">My purchases</a><a href="/signout">Sign out</a>`
+                ? html`<details class="me">
+                    <summary aria-label="Account"><span class="avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span></summary>
+                    <div class="menu">
+                      <p class="menu-who">Signed in with Till</p>
+                      <p class="menu-wallet" title="${user}">${short(user)}</p>
+                      <hr />
+                      <a href="/purchases">My purchases</a>
+                      <a href="/signout?switch=1">Switch account</a>
+                      <a href="/signout">Sign out</a>
+                    </div>
+                  </details>`
                 : html`<a class="till-btn" href="/signin?next=/">Sign in with Till</a>`}
             </div>
           </div>
         </nav>
       </div>
       ${body}
+      <script>
+        // Close the account menu on a click anywhere else.
+        document.addEventListener("click", e => {
+          const menu = document.querySelector("details.me")
+          if (menu && menu.open && !menu.contains(e.target)) menu.open = false
+        })
+      </script>
     </body>
   </html>`
 
