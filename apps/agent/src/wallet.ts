@@ -7,6 +7,7 @@ import { resolve } from "node:path"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { guard, registryView, type Approver, type Decision } from "@till/guard"
+import { EXTENSION_KEY, REGISTRY_ID } from "@till/identity"
 import { x402Client } from "@x402/core/client"
 import { toClientEvmSigner } from "@x402/evm"
 import { ExactEvmScheme } from "@x402/evm/exact/client"
@@ -16,7 +17,7 @@ import { ExactHederaScheme } from "@x402/hedera/exact/client"
 import type { Hex } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { z } from "zod"
-import { logDecision, topicUrl } from "./hcs"
+import { AGENT_ID, logDecision, topicUrl } from "./hcs"
 import { currentPolicy } from "./policy"
 import { lookupMerchants } from "./registry"
 
@@ -42,6 +43,17 @@ const client =
           },
         ],
       })
+
+// Its identity travels with every payment: its ERC-8004 ID, in the payload's extensions. The claim
+// isn't signed and proves nothing on its own; Till checks at settle that the payer is the wallet
+// registered for that ID, which was set with the wallet's own signature.
+client.registerExtension({
+  key: EXTENSION_KEY,
+  enrichPaymentPayload: async payload => ({
+    ...payload,
+    extensions: { ...payload.extensions, [EXTENSION_KEY]: { registry: REGISTRY_ID, agentId: AGENT_ID } },
+  }),
+})
 
 // Payments above the auto-pay limit go to the owner: filed with Till, answered on the console
 // (pay app /agent) with the owner's wallet signature. The agent waits up to five minutes.
