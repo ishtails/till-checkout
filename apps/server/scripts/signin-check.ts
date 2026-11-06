@@ -37,3 +37,19 @@ console.log("stranger:", theirs.redirect ? await open(theirs.redirect) : theirs)
 console.log("no pass:", await (await fetch(back)).text().then(t => ({ locked: t.includes("Sign in to open your report") })))
 console.log("forged pass:", await open(`${back}&till_pass=eyJtIjoiZGF0YS1zaG9wIiwidyI6IjB4MDAifQ.deadbeef`))
 console.log("foreign return URL:", await signIn(payer, "https://evil.example/steal"))
+
+// Signed in, the shop's header names the wallet, Buy goes straight to checkout, and My purchases lists this order.
+const viaBuy = await signIn(payer, `${SHOP}/buy`)
+const landing = await fetch(viaBuy.redirect!, { redirect: "manual" })
+const cookie = landing.headers.get("set-cookie")?.split(";")[0] ?? ""
+const buy = await fetch(`${SHOP}/buy`, { headers: { cookie }, redirect: "manual" })
+const home = await (await fetch(`${SHOP}/`, { headers: { cookie } })).text()
+const mineList = await (await fetch(`${SHOP}/purchases`, { headers: { cookie } })).text()
+const signedOutBuy = await fetch(`${SHOP}/buy`, { redirect: "manual" })
+console.log("signed in:", {
+  passGoesTo: landing.headers.get("location"),
+  buyGoesToCheckout: buy.headers.get("location")?.includes("/checkout/"),
+  headerShowsWallet: home.includes("My purchases"),
+  purchasesListsOrder: mineList.includes(orderId),
+  signedOutBuyGoesTo: signedOutBuy.headers.get("location"),
+})

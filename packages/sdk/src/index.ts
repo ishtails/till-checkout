@@ -63,6 +63,11 @@ export class Checkout {
     return this.call<TillOrder>(`/v1/orders/${id}`)
   }
 
+  /** Your orders paid by one wallet, newest first: for a "My purchases" page after Sign in with Till. */
+  ordersPaidBy(wallet: string) {
+    return this.call<(TillOrder & { createdAt: number })[]>(`/v1/orders/by-payer/${wallet}`)
+  }
+
   private merchant?: Promise<{ payTo: Record<string, string> }>
   private payTo = async (network: string) => {
     this.merchant ??= this.call("/v1/merchant")

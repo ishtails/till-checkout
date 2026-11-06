@@ -75,6 +75,14 @@ orders.post("/v1/orders", async c => {
   return c.json({ id: order.id, checkoutUrl: `${config.payAppUrl}/checkout/${order.id}`, status: order.status })
 })
 
+// The merchant's orders paid by one wallet: what a shop shows as "My purchases" after Sign in with Till.
+orders.get("/v1/orders/by-payer/:payer", c => {
+  const merchant = merchantFromAuth(c.req.header("authorization"))
+  if (!merchant) return c.json({ error: "bad api key" }, 401)
+  const payer = c.req.param("payer").toLowerCase()
+  return c.json(store.listOrders(merchant.id).filter(o => o.payer?.toLowerCase() === payer).map(publicOrder))
+})
+
 orders.get("/v1/orders/:id", c => {
   const order = store.getOrder(c.req.param("id"))
   return order ? c.json(publicOrder(order)) : c.json({ error: "not found" }, 404)
