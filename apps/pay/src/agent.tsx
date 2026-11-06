@@ -83,44 +83,27 @@ function OnArkiv({ listing, payTo, loading }: { listing?: ListingRecord; payTo: 
   )
 }
 
-// The agent's registered identity, and whether the log this console reads is the one its owner registered.
-function IdentityCard({ identity, topicId, owner }: { identity?: AgentIdentity | "error"; topicId?: string; owner?: string }) {
-  // The registry entry was registered by a setup script's test key: the console's owner is an email
-  // wallet, which can't send transactions on Hedera, and handing the entry over would clear the
-  // agent's wallet. Say so rather than show two owners without a reason.
-  const ownerNote = (registered: string) =>
-    owner && registered.toLowerCase() !== owner.toLowerCase()
-      ? `, a setup script's test key, because your email wallet (${short(owner)}) can't send transactions on Hedera yet. That key can't approve payments or change limits: only your wallet can`
-      : ""
-  if (!identity) return <Muted className="mt-4">Reading the agent's identity on Hedera…</Muted>
-  if (identity === "error") return <Muted className="mt-4">Couldn't read the agent's identity on Hedera just now.</Muted>
+// The agent's registered identity on Hedera, in one line: shops it pays see it as a verified agent.
+function IdentityCard({ identity, topicId }: { identity?: AgentIdentity | "error"; topicId?: string }) {
+  if (!identity || identity === "error") return null
   const logMatches = !!topicId && identity.hcsTopic === topicId
   return (
-    <Card className="mt-6 gap-0 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="flex items-center gap-2 font-medium">
-            <SealCheckIcon className="size-4 text-brand" weight="fill" />
-            Registered agent #{identity.agentId}
-            <span className="text-xs font-normal text-muted-foreground">ERC-8004 on Hedera</span>
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Owned by <span className="font-mono">{short(identity.owner)}</span>
-            {ownerNote(identity.owner)}. Pays from <span className="font-mono">{short(identity.wallet)}</span> on Whitechain
-            (that wallet signed that it's this agent's) and <span className="font-mono">{identity.hederaAccount}</span> on Hedera. Shops it pays see it as a verified agent.
-          </p>
-          <p className={`mt-1 text-xs ${logMatches ? "text-muted-foreground" : "text-destructive"}`}>
-            {logMatches ? `The log below (${topicId}) is the one its owner registered.` : `This log (${topicId ?? "none"}) isn't the one its owner registered (${identity.hcsTopic ?? "none"}).`}
-          </p>
-        </div>
+    <Card className="mt-6 gap-0 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="flex flex-wrap items-center gap-2 text-sm">
+          <SealCheckIcon className="size-4 text-brand" weight="fill" />
+          <span className="font-medium">Verified agent #{identity.agentId}</span>
+          <span className="text-muted-foreground">ERC-8004 on Hedera · shops it pays can check who it is</span>
+        </p>
         <RecordLink href={identity.explorerUrl}>Registry on HashScan</RecordLink>
       </div>
+      {!logMatches && <p className="mt-1 text-xs text-destructive">This log ({topicId ?? "none"}) isn't the one registered for the agent ({identity.hcsTopic ?? "none"}).</p>}
     </Card>
   )
 }
 
 export function AgentConsole() {
-  const { ready, authenticated, login, logout } = usePrivy()
+  const { ready, authenticated, login, logout, user } = usePrivy()
   const { wallets } = useWallets()
   const { signMessage } = useSignMessage()
   const [info, setInfo] = useState<AgentInfo>()
@@ -135,6 +118,8 @@ export function AgentConsole() {
 
   const address = wallets.find(w => w.walletClientType === "privy")?.address as Address | undefined
   const isOwner = !!address && !!info?.owner && info.owner.toLowerCase() === address.toLowerCase()
+  const email = user?.email?.address ?? user?.google?.email
+  const switchAccount = () => logout().then(() => login())
 
   useEffect(() => {
     api.agent().then(setInfo, e => toast.error(friendly(e.message)))
@@ -245,8 +230,15 @@ export function AgentConsole() {
           </div>
           {!ready ? null : authenticated ? (
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              {address && <span className="hidden font-mono sm:inline">{short(address)}{isOwner && " · owner"}</span>}
-              <Button variant="outline" size="sm" onClick={() => logout().then(() => login())}>
+              <div className="flex flex-col items-end leading-tight">
+                {email && <span className="max-w-[45vw] truncate text-foreground">{email}</span>}
+                {address && (
+                  <span className="font-mono">
+                    {short(address)} · <span className={isOwner ? "font-medium text-brand" : "text-destructive"}>{isOwner ? "owner" : "not the owner"}</span>
+                  </span>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={switchAccount}>
                 Switch account
               </Button>
             </div>
@@ -258,6 +250,31 @@ export function AgentConsole() {
         </div>
       </header>
 
+      {!ready || !info ? (
+        <main className="mx-auto max-w-md px-4 py-16 text-center">
+          <Muted>Loading…</Muted>
+        </main>
+      ) : !authenticated ? (
+        <main className="mx-auto max-w-md px-4 py-16 text-center">
+          <h1 className="text-xl">Agent console</h1>
+          <Muted className="mt-2">Only the agent's owner can open this: approve payments it pauses, and set its limits.</Muted>
+          <Button size="lg" className="mt-6" onClick={login}>
+            Owner sign in
+          </Button>
+        </main>
+      ) : !isOwner ? (
+        <main className="mx-auto max-w-md px-4 py-16 text-center">
+          <h1 className="text-xl">This account isn't the agent's owner</h1>
+          <Muted className="mt-2">
+            You're signed in as {email ?? "this account"}
+            {address && <> with wallet <span className="font-mono">{short(address)}</span></>}. The owner's wallet is{" "}
+            <span className="font-mono">{short(info.owner ?? "")}</span>.
+          </Muted>
+          <Button size="lg" className="mt-6" onClick={switchAccount}>
+            Switch account
+          </Button>
+        </main>
+      ) : (
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -272,7 +289,7 @@ export function AgentConsole() {
           {info?.topicId && <RecordLink href={`https://hashscan.io/testnet/topic/${info.topicId}`}>Log on HashScan · {info.topicId}</RecordLink>}
         </div>
 
-        <IdentityCard identity={identity} topicId={info?.topicId ?? undefined} owner={info?.owner ?? undefined} />
+        <IdentityCard identity={identity} topicId={info?.topicId ?? undefined} />
 
         {pending.map(a => (
           <Card key={a.id} className="mt-6 gap-0 border-warning/60 bg-warning/10 p-5 ring-2 ring-warning/30">
@@ -440,6 +457,7 @@ export function AgentConsole() {
           </aside>
         </div>
       </main>
+      )}
     </div>
   )
 }
