@@ -10,6 +10,8 @@ A receipt in a shop's own database is just the shop's word. If the shop says you
 
 **They get one purchase history across every shop.** "Your receipts" lists everything one wallet bought from any shop that uses Till, with one query by `payer`. With Postgres, that list only exists if one company keeps every shop's sales in its own database, and the customer can only see it if that company builds them a page. On Arkiv, it's a filter anyone can run.
 
+**Agents get a list of sellers no page can fake.** Till lists every shop on Arkiv with its prices and the address it's paid at. The AI agent finds sellers there instead of following links, and its spending guard blocks any payment to an address that doesn't match the seller's listing. In Postgres, that list would only be readable through our API, and an agent built by someone else would have to trust us to serve it. On Arkiv, any agent can query it directly, and see who wrote each entry.
+
 ## What I kept off Arkiv, and why
 
 - **The money.** Payments and refunds settle in USDT on Whitechain, and the Checkout contract enforces the rules (a refund can't exceed what was paid). Arkiv records point to those transactions; they don't replace them.

@@ -2,7 +2,7 @@
 
 ## What I filter on, who can edit, and when it expires
 
-**Filters.** Two columns are indexed, one for each page that reads from Arkiv:
+**Filters.** On receipts, two columns are indexed, one for each page that reads them (the merchant registry's filters are in the table and section below):
 
 - `order_id`: the receipt page (`/receipt/<order>`) loads every record for one order and shows the payment and each refund from them.
 - `payer`: "Your receipts" (`/receipts`) loads every record for one wallet, from any shop, and shows each purchase with its current state ("Paid", "$2.00 refunded", "Refunded").
@@ -24,6 +24,14 @@ Everything else (amounts, transactions, the shop's name) is stored but not index
 | Records never edited, one per event | A partial refund shows as its own line under the payment, and the refunded total is in each record. |
 | The entity explorer's query URL | The "On Arkiv ↗" link opens the same query on Rabdi's entity explorer, so the customer can check the records without us. |
 | Reads from the browser | The receipt loads from Arkiv even when Till's server is down (tested by stopping it). |
+| Indexed `category` on `till.merchant` | The AI agent's `find_sellers` tool lists the shops selling `rent-data`, with their endpoints and prices, so the agent finds the shop without following any link. |
+| Indexed `pay_to_evm` / `pay_to_hedera` | Before the agent pays, its spending guard checks the 402's payee against the seller's listing. The demo's look-alike API is blocked with "isn't Brickline's registered address on Arkiv (entity 0x2b22…fdc2)", and that reason is on the public log. |
+| `patchEntity` on one entity per shop | The listing keeps one entity key when a price or address changes, so the console and the guard's reasons can link to it. |
+| Listings read in the browser | The landing page's "Merchants on Till" and the agent console's "Found on Arkiv, same addresses" read the registry directly. |
+
+## The merchant registry
+
+Receipts are about the customer; the registry is about the agent. An agent that pays per API call has to find sellers somewhere, and the easy answer, a link on a web page, is exactly how the demo's attack works: a review page links to a look-alike API that asks ten times the price, paid to a stranger. So Till lists every shop on Arkiv, with what it sells, the price of each call and the address it's paid at, and the agent looks sellers up there. Its spending guard then refuses any payment whose payee isn't the address on the seller's listing, even when the agent was sent by a link and trusts it. Only Till's writer can create listings, and every read filters on it, so the look-alike can't add itself.
 
 ## How the writes work
 

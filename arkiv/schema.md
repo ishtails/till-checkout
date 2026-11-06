@@ -1,6 +1,12 @@
 # Schema
 
-Till keeps one kind of entity on Arkiv: a **receipt record**. Every time an order is paid or refunded, the Till server saves one record. An order paid and then refunded twice has three records: `paid`, `refunded`, `refunded`. Nothing is ever edited, so an order's history only grows.
+Till keeps two kinds of entity on Arkiv:
+- a **receipt record** (`till.receipt`), one per payment or refund, below;
+- a **merchant listing** (`till.merchant`), one per shop, which agents use to find sellers ([further down](#merchant-listings-tillmerchant)).
+
+## Receipts (`till.receipt`)
+
+Every time an order is paid or refunded, the Till server saves one record. An order paid and then refunded twice has three records: `paid`, `refunded`, `refunded`. Nothing is ever edited, so an order's history only grows.
 
 The schema is defined once in [`packages/receipts/src/index.ts`](../packages/receipts/src/index.ts) with `defineSchema("till.receipt", …)`. The server writes through it, and the receipt pages read through it.
 
@@ -45,3 +51,26 @@ Every record is created and owned by Till's writer wallet, `0xffE2359A07d0e19362
 ## When they expire
 
 `ExpirationTime.max()`, the longest Rabdi allows: about 182 days from the save. That covers the period when people actually check a purchase: returns, refunds and disputes. Keeping receipts longer would mean extending each record before it expires (see `friction.md`).
+
+## Merchant listings (`till.merchant`)
+
+One entity per shop, defined in [`packages/receipts/src/registry.ts`](../packages/receipts/src/registry.ts) and kept up to date by the server ([`apps/server/src/registry.ts`](../apps/server/src/registry.ts)). On start, the server creates a shop's listing once, then patches it only when something changed, so the entity key stays the same. Only shops with a public `https` site are listed.
+
+| Field | Type | Indexed | What it is |
+|---|---|---|---|
+| `merchant_id` | `str` | yes | The shop's ID in Till. The server finds its own listing by this. |
+| `category` | `str` | yes | What it sells, e.g. `rent-data`. The agent's `find_sellers` filters on it. |
+| `pay_to_evm` | `addr` | yes | The address it's paid at on Whitechain (lowercased). |
+| `pay_to_hedera` | `str` | yes | The account it's paid at on Hedera testnet (`0.0.x`). |
+| `name` | `str` | no | The shop's name. |
+| `site_url` | `str` | no | Its website. |
+| `endpoints` | `bytes` | no | Its paid API endpoints as JSON: URL, method, price in USD, description. Stored as bytes because a `str` holds at most 128 bytes. |
+
+The demo shop's listing is entity [`0x2b22…fdc2`](https://rabdi.explorer.arkiv.network/entity-explorer?q=%24key%20%3D%20key(0x2b22a7b395f4d97cef1632c54ea44733bab048ee2e0aae80ec6ea0ff996efdc2)).
+
+```
+# Every Till merchant, or one category (the agent's find_sellers)
+arkiv.schema = str('till.merchant') AND category = str('rent-data') AND $owner = addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)
+```
+
+The same writer wallet owns the listings, and every read filters on it, so a look-alike seller can't list itself. Listings use `ExpirationTime.max()` too.
