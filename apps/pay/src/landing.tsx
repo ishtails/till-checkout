@@ -14,6 +14,7 @@ import {
 import { motion } from "motion/react"
 import { Children, type ReactNode } from "react"
 import { FADE_IN_VARIANTS, MotionReveal, SPRING_TOKENS, STAGGER_CONTAINER_VARIANTS, STAGGER_ITEM_VARIANTS, useMotionConfig } from "./lib/motion"
+import { CodeWindow } from "./code-window"
 import { Badge, Button, Card, RecordLink } from "./ui"
 
 const SHOP = import.meta.env.VITE_SHOP_URL ?? "http://localhost:3002"
@@ -265,9 +266,7 @@ export function Landing() {
                 The demo shop's integration
               </RecordLink>
             </div>
-            <pre className="overflow-x-auto rounded-xl bg-primary p-5 text-[12.5px] leading-relaxed text-primary-foreground/90">
-              <code>{integration}</code>
-            </pre>
+            <CodeWindow code={integration} filename="shop/src/index.ts" />
           </Reveal>
         </Section>
 
