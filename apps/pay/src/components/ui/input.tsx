@@ -1,0 +1,39 @@
+import { Input as InputPrimitive } from "@base-ui/react/input";
+import { cva, type VariantProps } from "class-variance-authority";
+import type * as React from "react";
+
+import { cn } from "../../lib/utils";
+
+const inputVariants = cva(
+	"h-11 w-full min-w-0 rounded-md border border-border bg-transparent px-2.5 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-9 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+	{
+		variants: {
+			variant: {
+				default: "",
+				field:
+					"border-border/60 bg-muted/5 text-sm text-foreground/90 placeholder:text-muted-foreground/45",
+			},
+		},
+		defaultVariants: {
+			variant: "default",
+		},
+	},
+);
+
+function Input({
+	className,
+	type,
+	variant,
+	...props
+}: React.ComponentProps<"input"> & VariantProps<typeof inputVariants>) {
+	return (
+		<InputPrimitive
+			type={type}
+			data-slot="input"
+			className={cn(inputVariants({ variant, className }))}
+			{...props}
+		/>
+	);
+}
+
+export { Input, inputVariants };
