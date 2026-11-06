@@ -12,7 +12,8 @@ import {
   StorefrontIcon,
 } from "@phosphor-icons/react"
 import { motion } from "motion/react"
-import { Children, type ReactNode } from "react"
+import { Children, useEffect, useState, type ReactNode } from "react"
+import { registry, registryExplorer, type ListingRecord } from "./arkiv"
 import { FADE_IN_VARIANTS, MotionReveal, SPRING_TOKENS, STAGGER_CONTAINER_VARIANTS, STAGGER_ITEM_VARIANTS, useMotionConfig } from "./lib/motion"
 import { CodeWindow } from "./code-window"
 import { Badge, Button, Card, RecordLink } from "./ui"
@@ -109,6 +110,40 @@ const proof: [string, string, string][] = [
   ["The agent paid the real shop $0.05 in USDC, no human involved", "https://hashscan.io/testnet/transaction/0.0.11155223@1793901510.215554723", "HashScan"],
   ["An agent paid $0.05 in USDT over x402", `${WX}0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20`, "Whitechain"],
 ]
+
+// Read live from Arkiv in the browser: the same records an agent looks sellers up in.
+function MerchantsOnTill() {
+  const [merchants, setMerchants] = useState<ListingRecord[] | "error">()
+  useEffect(() => {
+    registry.list().then(setMerchants, () => setMerchants("error"))
+  }, [])
+  return (
+    <Card className="mt-8 gap-0 py-0">
+      <ul>
+        {merchants === undefined && <li className="px-5 py-4 text-sm text-muted-foreground">Reading from Arkiv…</li>}
+        {merchants === "error" && <li className="px-5 py-4 text-sm text-muted-foreground">Couldn't reach Arkiv just now.</li>}
+        {Array.isArray(merchants) &&
+          merchants.map(m => (
+            <li key={m.entityKey} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-5 py-4 last:border-0">
+              <span className="flex items-center gap-3 text-sm">
+                <StorefrontIcon className="size-4 shrink-0 text-muted-foreground" />
+                <span>
+                  <a className="font-medium hover:underline" href={m.siteUrl}>
+                    {m.name}
+                  </a>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · {m.category} · {m.endpoints.map(e => `$${e.priceUsd}`).join(" or ")} a call
+                  </span>
+                </span>
+              </span>
+              <RecordLink href={m.explorerUrl}>On Arkiv</RecordLink>
+            </li>
+          ))}
+      </ul>
+    </Card>
+  )
+}
 
 export function Landing() {
   const { reduced } = useMotionConfig()
@@ -287,6 +322,18 @@ export function Landing() {
               Every receipt is saved on Arkiv. The receipt page reads it from there, so it doesn't depend on the shop, or on us.
             </Feature>
           </StaggerGrid>
+        </Section>
+
+        <Section eyebrow="Merchants on Till" title="Agents find sellers in a public registry, not from a page's link.">
+          <p className="mt-4 max-w-2xl text-muted-foreground">
+            Till lists every shop on Arkiv: what it sells, the price of each call, and the address it's paid at. The agent looks sellers up there, and a payment to any other address is blocked.
+          </p>
+          <Reveal>
+            <MerchantsOnTill />
+          </Reveal>
+          <RecordLink className="mt-3 text-sm" href={registryExplorer()}>
+            The registry query on Arkiv
+          </RecordLink>
         </Section>
 
         <Section eyebrow="Proof" title="Everything above happened on testnet. Click any of it.">
