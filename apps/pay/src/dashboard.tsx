@@ -1,13 +1,25 @@
 import { usePrivy, useSignTypedData, useWallets } from "@privy-io/react-auth"
-import { DownloadSimpleIcon, GasPumpIcon, RobotIcon, ShoppingBagIcon } from "@phosphor-icons/react"
+import { DownloadSimpleIcon, GasPumpIcon, RobotIcon, ShoppingBagIcon, WarningCircleIcon } from "@phosphor-icons/react"
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 import type { Address, Hex } from "viem"
 import { parseUnits } from "viem"
 import { agentExplorerTx, api, explorerTx, usdtBalance, type AgentPayment, type GasMeter, type Order } from "./api"
 import { receiveTypes } from "./checkout"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./components/ui/alert-dialog"
 import { Input } from "./components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./components/ui/table"
 import { download, ledgerCsv } from "./csv"
+import { friendly } from "./lib/errors"
 import { Badge, Button, Card, Logo, Muted, RecordLink } from "./ui"
 
 const USDT = "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
@@ -41,6 +53,8 @@ export function Dashboard() {
   // The refund amount typed for each order, in USD. Empty means the full amount left.
   const [amounts, setAmounts] = useState<Record<string, string>>({})
   const [error, setError] = useState<string>()
+  // The order waiting for the merchant to confirm its refund.
+  const [confirming, setConfirming] = useState<Order>()
 
   const address = wallets.find(w => w.walletClientType === "privy")?.address as Address | undefined
 
@@ -51,7 +65,15 @@ export function Dashboard() {
     api.gas(merchantId).then(setGas, () => {})
   }, [merchantId, orders])
   useEffect(() => {
-    api.agentPayments().then(all => setAgentPayments(all.filter(p => p.merchantId === merchantId)), e => setError(e.message))
+    const loadAgents = () => api.agentPayments().then(all => setAgentPayments(all.filter(p => p.merchantId === merchantId)), () => {})
+    void loadAgents()
+    // New orders and agent payments show up on their own, without a reload.
+    const timer = setInterval(() => {
+      if (document.hidden) return
+      void load()
+      void loadAgents()
+    }, 5000)
+    return () => clearInterval(timer)
   }, [merchantId])
   useEffect(() => {
     if (address) usdtBalance(address, USDT).then(setBalance)
@@ -86,20 +108,33 @@ export function Dashboard() {
         },
         { address, uiOptions: { showWalletUIs: false } },
       )
-      await api.refund(order.id, {
+      const { txHash } = await api.refund(order.id, {
         amount: typed || (Number(left) / 1e6).toString(),
         validAfter: 0,
         validBefore: info.validBefore,
         signature: signature as Hex,
       })
       setAmounts(a => ({ ...a, [order.id]: "" }))
+      toast.success(`Refunded $${(Number(value) / 1e6).toFixed(2)}`, {
+        description: "Sent back to the customer on Whitechain.",
+        action: { label: "View", onClick: () => window.open(explorerTx(txHash), "_blank") },
+      })
       await load()
     } catch (e) {
-      setError((e as Error).message)
+      toast.error(friendly((e as Error).message))
     } finally {
       setBusy(undefined)
     }
   }
+
+  const merchantWallet = orders?.find(o => o.paidTo)?.paidTo
+  const wrongWallet = authenticated && address && merchantWallet && merchantWallet.toLowerCase() !== address.toLowerCase()
+  const switchAccount = async () => {
+    await logout()
+    login()
+  }
+  const refundLeft = (o: Order) => Number(o.amount) - Number(o.refunded)
+  const refundAmount = (o: Order) => Number(amounts[o.id]?.trim() || refundLeft(o))
 
   const received = orders?.reduce((a, o) => a + Number(o.amount) - Number(o.refunded), 0) ?? 0
   const agentTotal = agentPayments?.reduce((a, p) => a + Number(p.amount) / 1e6, 0) ?? 0
@@ -123,8 +158,8 @@ export function Dashboard() {
                   </p>
                 )}
               </div>
-              <Button variant="outline" size="sm" onClick={logout}>
-                Log out
+              <Button variant="outline" size="sm" onClick={switchAccount}>
+                Switch account
               </Button>
             </div>
           ) : (
@@ -147,7 +182,18 @@ export function Dashboard() {
           />
         </div>
 
-        {error && <p className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+        {wrongWallet && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-warning/20 px-4 py-3 text-sm text-warning-foreground">
+            <span className="flex items-center gap-2">
+              <WarningCircleIcon className="size-4 shrink-0" weight="fill" />
+              You're signed in as {user?.email?.address ?? user?.google?.email}. Refunds need the shop's wallet ({short(merchantWallet!)}).
+            </span>
+            <Button variant="outline" size="sm" onClick={switchAccount}>
+              Switch account
+            </Button>
+          </div>
+        )}
+        {error && <p className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{friendly(error)}</p>}
 
         <div className="mt-10 flex items-end justify-between gap-4">
           <div>
@@ -215,7 +261,7 @@ export function Dashboard() {
                                 onChange={e => setAmounts(a => ({ ...a, [o.id]: e.target.value }))}
                               />
                             </div>
-                            <Button variant="outline" size="sm" isLoading={busy === o.id} disabled={busy !== undefined} onClick={() => refund(o)}>
+                            <Button variant="outline" size="sm" isLoading={busy === o.id} disabled={busy !== undefined} onClick={() => setConfirming(o)}>
                               Refund
                             </Button>
                           </div>
@@ -271,6 +317,35 @@ export function Dashboard() {
           )}
         </Card>
       </main>
+
+      <AlertDialog open={!!confirming} onOpenChange={open => !open && setConfirming(undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Refund ${confirming ? refundAmount(confirming).toFixed(2) : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirming && (
+                <>
+                  It goes back to {short(confirming.payer ?? "")} for “{confirming.description}”, on Whitechain. Refunds can't be undone, and the total can't pass what was paid
+                  (${refundLeft(confirming).toFixed(2)} left).
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel variant="outline">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="brand"
+              onClick={() => {
+                const o = confirming
+                setConfirming(undefined)
+                if (o) void refund(o)
+              }}
+            >
+              Refund
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
