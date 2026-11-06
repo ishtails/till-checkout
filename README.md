@@ -14,11 +14,18 @@
 
 ## Why I built it
 
-AI agents are starting to pay for things: one API call, one dataset, five cents at a time. Shops want them as customers, and a card can't charge five cents with no account. But people will only let an agent spend if its limits hold.
+AI agents are starting to pay for things: one API call, one dataset, five cents at a time. Shops want them as customers, since a card can't charge five cents with no account. But an agent that can pay can also be tricked into paying.
 
-Before the event I tested that. I gave Claude Haiku, Sonnet and Opus a task and a review page. Its link pointed to a look-alike of the real API, asking ten times the price, paid to a stranger. **The link fooled every model, every time** (9 of 9). Instructions planted on the page didn't work at all (0 of 18). A poisoned link does, because nothing on the page gives it away: only the payment request shows the real price and payee. So the limit has to live in the wallet, not the model.
+Before the event I tested how easily. I gave Claude Haiku, Sonnet and Opus a task and a review page. Its link went to a look-alike of the real API, asking ten times the price, paid to a stranger. **The link fooled every model, every time** (9 of 9). Instructions planted on the page failed (0 of 18). The link worked because nothing on the page gives it away: only the payment request shows the real price and payee.
 
-Till is both halves: a checkout a shop adds in about 20 lines, and a guard in the agent's wallet. Something wrong is blocked outright. Something only unusual, like a bigger payment than normal, waits for the owner's OK on their phone.
+So an agent's limits have to hold no matter who is talking to it. In Till, nobody can talk it out of them:
+- **Not a web page.** The agent finds sellers in a public registry on Arkiv, and the guard pays only the seller's registered address.
+- **Not the model.** The guard sits in the agent's wallet and checks every payment before anything is signed.
+- **Not even Till.** Limits and approvals count only when the owner's wallet signs them, and the agent checks that signature itself.
+
+Something wrong is blocked outright. Something only unusual, like a bigger payment than normal, waits for the owner's OK on their phone. Every payment, approval and block goes on a public log on Hedera, so the owner can check what the agent spent without taking anyone's word for it.
+
+For the shop, all of this is just a checkout: about 20 lines, paid in USDT by people and agents alike, with no gas for either and refunds in one click.
 
 ## Try it
 Open the [demo shop](https://shop.till.ishtails.xyz), sign in with any email, get free test USDT, and buy the report ($0.10; prices are lowered for testnet). Your receipt is read from Arkiv. The agent runs on my laptop; its log is public on [HashScan](https://hashscan.io/testnet/topic/0.0.11155231).
