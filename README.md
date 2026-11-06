@@ -1,16 +1,28 @@
+<div align="center">
 
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=ztqHb8Y0Uu0"><img src="assets/demo-thumbnail.png" alt="Watch the Till demo video (under 4 minutes)" width="880"></a>
-</p>
+<img src="assets/logo-tile.png" width="84" alt="Till logo">
 
 # Till
 
 **Get paid by people and AI agents that can't be tricked into overpaying.**
 
-- **A checkout for small online sellers.** People pay in USDT with an email and no gas, agents pay per API call with no sign-up, and refunds take one click.
-- **A spending guard for the agent's owner.** Its limits hold whoever is talking to it: a web page, the model, or Till itself. Unusual payments wait for the owner's OK, and every payment and block is a public record.
+<a href="https://till.ishtails.xyz"><b>Try it live</b></a> &nbsp;·&nbsp; <a href="https://www.youtube.com/watch?v=ztqHb8Y0Uu0"><b>Watch the demo</b></a> &nbsp;·&nbsp; <a href="https://till.ishtails.xyz/docs"><b>Read the docs</b></a>
 
-[**Try it live**](https://till.ishtails.xyz) · [**Demo video**](https://www.youtube.com/watch?v=ztqHb8Y0Uu0) · [Docs](https://till.ishtails.xyz/docs) · [Specs](design/) · Built solo at ETHGlobal Mumbai, 5–7 Nov 2026
+<br>
+
+<a href="https://www.youtube.com/watch?v=ztqHb8Y0Uu0"><img src="assets/demo-thumbnail.png" width="760" alt="Watch the Till demo video (under 4 minutes)"></a>
+
+<sub>Built solo at ETHGlobal Mumbai, 5–7 Nov 2026 &nbsp;·&nbsp; Whitechain · Hedera · Arkiv &nbsp;·&nbsp; <a href="design/">Specs</a></sub>
+
+</div>
+
+<br>
+
+**A checkout for small online sellers.** People pay in USDT with an email and no gas. Agents pay per API call with no sign-up. Refunds take one click.
+
+**A spending guard for the agent's owner.** Its limits hold whoever is talking to it: a web page, the model, or Till itself. Unusual payments wait for the owner's OK, and every payment and block is a public record.
+
+<br>
 
 ## Why I built it
 
@@ -25,44 +37,65 @@ So in Till, nobody can talk an agent out of its limits:
 
 Something wrong is blocked outright. Something only unusual, like a bigger payment than normal, waits for the owner's OK on their phone.
 
+<br>
+
 ## What happens, with proof
 
-**Try it:**
-- [Buy the $0.10 report](https://shop.till.ishtails.xyz) with any email. The test USDT is free.
-- See [your account](https://pay.till.ishtails.xyz/account): every purchase from any Till shop, read from Arkiv, and your agent.
-- The shop's [dashboard](https://pay.till.ishtails.xyz/dashboard/data-shop) opens only for the shop's wallet, and the [agent console](https://pay.till.ishtails.xyz/agent/154) only for the agent's owner. The video and screenshots show both.
+**Try it yourself:** [buy the $0.10 report](https://shop.till.ishtails.xyz) with any email (the test USDT is free), then open [your account](https://pay.till.ishtails.xyz/account). The shop's [dashboard](https://pay.till.ishtails.xyz/dashboard/data-shop) opens only for the shop's wallet, and the [agent console](https://pay.till.ishtails.xyz/agent/154) only for the agent's owner.
 
-1. **A person pays with just an email.** Till's relayer pays the gas; the customer holds no WBT.\
-   ↳ [Payment](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316)
-2. **An agent is tricked; its wallet isn't.** A review page links to a look-alike API asking $0.50 to a stranger. The guard blocks it before signing: not on its list, not Brickline's address on Arkiv, over the $0.30 cap.\
-   ↳ [The block, on Hedera](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/26) · [Brickline's listing on Arkiv](https://rabdi.explorer.arkiv.network/entity-explorer?q=%24key%20%3D%20key(0x2b22a7b395f4d97cef1632c54ea44733bab048ee2e0aae80ec6ea0ff996efdc2))
-3. **The agent finds the real shop and pays.** With no link, it looks Brickline up on Arkiv and pays $0.05 in USDC on Hedera, with no human approving. It can pay in USDT on Whitechain too. It's registered as ERC-8004 agent #154, so the shop sees which agent paid.\
-   ↳ [Hedera payment](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515) · [Whitechain payment](https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20) · [registration](https://hashscan.io/testnet/transaction/0x6a36a9bf4eee48da31e9140db458ce767786403879966f3a6db59281bef76a4b)
-4. **Over its $0.10 auto-pay limit, it asks.** It wants the $0.25 whole-city dataset, so it waits; the owner approves on their phone, and it pays.\
-   ↳ [The owner's signed approval, on Hedera](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/44) · [the $0.25 payment](https://hashscan.io/testnet/transaction/0.0.11155223@1793980598.791514015)
-5. **The merchant refunds, people and agents alike.** One click, no gas, never more than was paid. The customer's receipt reads the refund from Arkiv, not from the shop.\
-   ↳ [$2](https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b) then [$3](https://explorer.testnet.whitechain.io/tx/0x21c4d4263a743b34dcef5da098dad9cade4a412c3364075f1e283021014c3419) of a $5 order · [an agent's payment](https://explorer.testnet.whitechain.io/tx/0x9fb9fb96855ce195d3ed927321db56e359a16bb76b3458b32f5afa7aebfe644c) · [the receipt's records](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20order_id%20%3D%20str('0x1b44530319fbffb44ec51e0cec380d6bb019806795a05c064ba28d412a40f0b4')%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326))
+**1 · A person pays with just an email.** Till's relayer pays the gas; the customer holds no WBT.\
+<sub>[Payment](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316)</sub>
 
-<p align="center">
-  <a href="assets/screenshots/console-blocked.png"><img src="assets/screenshots/console-blocked.png" width="32%" alt="The owner's agent console: a blocked look-alike payment, an approval and paid calls"></a>
-  <a href="assets/screenshots/dashboard-refunds.png"><img src="assets/screenshots/dashboard-refunds.png" width="32%" alt="The merchant dashboard: orders, a partial refund and the gas tank"></a>
-  <a href="assets/screenshots/checkout-receipt.png"><img src="assets/screenshots/checkout-receipt.png" width="32%" alt="Checkout with just an email, and the receipt read from Arkiv"></a>
-</p>
-<p align="center"><sub>The owner's console: a blocked look-alike, an approval · The shop's dashboard: a partial refund · Checkout by email, and the receipt from Arkiv</sub></p>
+**2 · An agent is tricked; its wallet isn't.** A review page links to a look-alike API asking $0.50 to a stranger. The guard blocks it before signing: not on its list, not Brickline's address on Arkiv, over the $0.30 cap.\
+<sub>[The block, on Hedera](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/26) · [Brickline's listing on Arkiv](https://rabdi.explorer.arkiv.network/entity-explorer?q=%24key%20%3D%20key(0x2b22a7b395f4d97cef1632c54ea44733bab048ee2e0aae80ec6ea0ff996efdc2))</sub>
+
+**3 · The agent finds the real shop and pays.** With no link, it looks Brickline up on Arkiv and pays $0.05 in USDC on Hedera, with no human approving. It can pay in USDT on Whitechain too. It's registered as ERC-8004 agent #154, so the shop sees which agent paid.\
+<sub>[Hedera payment](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515) · [Whitechain payment](https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20) · [registration](https://hashscan.io/testnet/transaction/0x6a36a9bf4eee48da31e9140db458ce767786403879966f3a6db59281bef76a4b)</sub>
+
+**4 · Over its $0.10 auto-pay limit, it asks.** It wants the $0.25 whole-city dataset, so it waits; the owner approves on their phone, and it pays.\
+<sub>[The owner's signed approval, on Hedera](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/44) · [the $0.25 payment](https://hashscan.io/testnet/transaction/0.0.11155223@1793980598.791514015)</sub>
+
+**5 · The merchant refunds, people and agents alike.** One click, no gas, never more than was paid. The customer's receipt reads the refund from Arkiv, not from the shop.\
+<sub>[$2](https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b) then [$3](https://explorer.testnet.whitechain.io/tx/0x21c4d4263a743b34dcef5da098dad9cade4a412c3364075f1e283021014c3419) of a $5 order · [an agent's payment](https://explorer.testnet.whitechain.io/tx/0x9fb9fb96855ce195d3ed927321db56e359a16bb76b3458b32f5afa7aebfe644c) · [the receipt's records](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20order_id%20%3D%20str('0x1b44530319fbffb44ec51e0cec380d6bb019806795a05c064ba28d412a40f0b4')%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326))</sub>
 
 All on testnet. The agent runs on my laptop; its whole log is public on [HashScan](https://hashscan.io/testnet/topic/0.0.11155231).
 
-## Whitechain
-**In short:** everything a shop needs from the first payment on, with no gas for anyone who pays. What it was like to build: [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md).
+<br>
 
-- **Checkout contract (verified):** [`0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6`](https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6)
-- **Three views, live:** the merchant's [dashboard](https://pay.till.ishtails.xyz/dashboard/data-shop) (orders, refunds, agent payments, gas tank, CSV); the customer's [account](https://pay.till.ishtails.xyz/account) (every purchase from any Till shop, from Arkiv, and their agent), with checkout and receipt pages; and the agent owner's [console](https://pay.till.ishtails.xyz/agent/154) (limits, approvals, the agent's log).
-- **No crypto steps for the payer:** sign in with an email or Google, enter the code, Pay. No wallet app, no network to pick.
-- **Payments:** a customer's [$5 from an email wallet](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316), sent by Till's relayer ([the first, by script](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)), and an agent's [$0.05 over x402](https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20), through Till's facilitator.
-- **Refunds in one click**, capped by the contract at what was paid: [all $5](https://explorer.testnet.whitechain.io/tx/0x911cf211e623c0c19a77fe75b10560f97344512f657f5f14abc6dcb03377c8ca) of [one order](https://explorer.testnet.whitechain.io/tx/0xfcc75268a2195658d98bef7cfb4a43b8d27aa9bffe36ac2f18e4f862dabae83f), [$2](https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b) then [$3](https://explorer.testnet.whitechain.io/tx/0x21c4d4263a743b34dcef5da098dad9cade4a412c3364075f1e283021014c3419) of [another](https://explorer.testnet.whitechain.io/tx/0x05dd3b8e645f109c5faed70d6722b44fd4b2b6e5c0d6a84be6ffd9df57c4b76a), and [an agent's payment](https://explorer.testnet.whitechain.io/tx/0x9fb9fb96855ce195d3ed927321db56e359a16bb76b3458b32f5afa7aebfe644c).
-- **After the payment:** a CSV download with an explorer link on every row, signed `order.paid` and `order.refunded` webhooks, and Sign in with Till, so the shop knows who paid without running accounts.
+<table>
+<tr>
+<td width="50%" valign="top"><a href="assets/screenshots/console-blocked.png"><img src="assets/screenshots/console-blocked.png" alt="The owner's agent console: a blocked look-alike payment, an approval and paid calls"></a><br><sub><b>Agent owner.</b> The console: a blocked look-alike, an approval, the signed limits.</sub></td>
+<td width="50%" valign="top"><a href="assets/screenshots/dashboard-refunds.png"><img src="assets/screenshots/dashboard-refunds.png" alt="The merchant dashboard: orders, a partial refund and the gas tank"></a><br><sub><b>Merchant.</b> The dashboard: a $0.04 partial refund and the gas tank.</sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="assets/screenshots/checkout-receipt.png"><img src="assets/screenshots/checkout-receipt.png" alt="Checkout with just an email, and the receipt read from Arkiv"></a><br><sub><b>Customer.</b> Checkout with just an email, and the receipt, read from Arkiv.</sub></td>
+<td width="50%" valign="top"><a href="assets/screenshots/account.png"><img src="assets/screenshots/account.png" alt="The customer's account: every purchase from any Till shop, and their agent"></a><br><sub><b>Customer.</b> Every purchase from any Till shop, and what their agent spent today.</sub></td>
+</tr>
+</table>
+
+<br>
+
+## Whitechain
+
+**In short:** everything a shop needs from the first payment on, with no gas for anyone who pays.
+
+| | |
+|---|---|
+| Checkout contract (verified) | [`0xa4eB…eEb6`](https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6) |
+| A customer's payment, from an email wallet, sent by Till's relayer | [$5 in USDT](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316) · [the first, by script](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3) |
+| An agent's payment over x402, through Till's facilitator | [$0.05 in USDT](https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20) |
+| Refunds in one click, capped by the contract at what was paid | [all $5](https://explorer.testnet.whitechain.io/tx/0x911cf211e623c0c19a77fe75b10560f97344512f657f5f14abc6dcb03377c8ca) of [one order](https://explorer.testnet.whitechain.io/tx/0xfcc75268a2195658d98bef7cfb4a43b8d27aa9bffe36ac2f18e4f862dabae83f) · [$2](https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b) then [$3](https://explorer.testnet.whitechain.io/tx/0x21c4d4263a743b34dcef5da098dad9cade4a412c3364075f1e283021014c3419) of [another](https://explorer.testnet.whitechain.io/tx/0x05dd3b8e645f109c5faed70d6722b44fd4b2b6e5c0d6a84be6ffd9df57c4b76a) · [an agent's payment](https://explorer.testnet.whitechain.io/tx/0x9fb9fb96855ce195d3ed927321db56e359a16bb76b3458b32f5afa7aebfe644c) |
+| Three live views | the merchant's [dashboard](https://pay.till.ishtails.xyz/dashboard/data-shop) · the customer's [account](https://pay.till.ishtails.xyz/account) · the owner's [console](https://pay.till.ishtails.xyz/agent/154) |
+| What it was like to build | [`WHITECHAIN_FEEDBACK.md`](WHITECHAIN_FEEDBACK.md) |
+
+**No crypto steps for the payer:** sign in with an email or Google, enter the code, Pay. No wallet app, no network to pick. **After the payment,** the shop gets a CSV with an explorer link on every row, signed `order.paid` and `order.refunded` webhooks, and Sign in with Till, so it knows who paid without running accounts.
 
 **Why this needs on-chain stablecoin settlement on Whitechain.** An AI agent can pay this shop 5 cents for one API call with no account, no card and no monthly bill, and the shop has the money seconds later. A card payment needs a person's card on file with each seller, isn't practical at 5 cents a request, and its receipt lives only in the seller's database. Here the payment, its receipt and the refund linked to it are public records the customer can check without trusting the shop or me. Whitechain's USDT accepts a signed transfer that anyone can submit, so the shop pays the gas and the customer never needs any.
+
+<details>
+<summary><b>How the business pays for gas, where the relayer's WBT comes from, and what stops someone draining it</b></summary>
+
+<br>
 
 **How the business pays for gas.** From a gas tank it prepays in USDT, charged at each transaction's real fee plus 10%, which is how Till earns. New merchants start with $5 of credit, and topping up is gasless. A checkout payment costs about 0.0009 WBT ([measured](https://explorer.testnet.whitechain.io/tx/0x93f38e2a5cd59f3995298c6780838454296ece64ef14bfa462c4ad1d9ea76ab3)).
 
@@ -77,13 +110,22 @@ All on testnet. The agent runs on my laptop; its whole log is public on [HashSca
 6. 500 transactions per merchant per day, and 0.2 WBT of gas per day in total.
 7. It holds at most about 0.3 WBT.
 
+</details>
+
+<br>
+
 ## Hedera
+
 **In short:** an agent that finds a seller and pays it on its own over x402, inside limits it can't be talked out of, with every payment, approval and block on a public HCS log. It settles in USDC, an HTS token, through Till's own facilitator, and its identity is on ERC-8004.
 
-- **x402 endpoint:** `GET /api/data` on the demo shop. Its 402 offers USDT on Whitechain and USDC on Hedera.
-- **A settled payment:** [`0.0.11155223@1793960375.693637515`](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515) ($0.05 to the merchant `0.0.11155222`; the fee payer paid the 0.016 HBAR fee, the agent paid none).
-- **Facilitator:** Till's own (`apps/server`). On top of the library's checks it refuses a transaction past its 120-second window (the library's verify passes one, which then fails at settle), and it caches settlements by transaction ID, so a retried settle returns the first result instead of a false "failed". Fallback: x402.org, one line of config.
-- **Spending log:** HCS topic [`0.0.11155231`](https://hashscan.io/testnet/topic/0.0.11155231). Every payment, approval and block, written by the agent's own key, with the reasons. After each run the agent prints a spend report read back from the mirror node, not from its own memory.
+| | |
+|---|---|
+| x402 endpoint | `GET /api/data` on the demo shop. Its 402 offers USDT on Whitechain and USDC on Hedera. |
+| A settled payment, no human approving | [`0.0.11155223@1793960375.693637515`](https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515): $0.05 to the merchant `0.0.11155222`. The fee payer paid the 0.016 HBAR fee; the agent paid none. |
+| An owner-approved payment | [$0.25](https://hashscan.io/testnet/transaction/0.0.11155223@1793980598.791514015), after the [owner's signed approval](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/44) |
+| Spending log (HCS) | [`0.0.11155231`](https://hashscan.io/testnet/topic/0.0.11155231): every payment, approval and block, with the reasons |
+| Agent identity (ERC-8004) | [agent #154](https://hashscan.io/testnet/contract/0x8004A818BFB912233c491871b3d84c89A494BD9e) · [registration](https://hashscan.io/testnet/transaction/0x6a36a9bf4eee48da31e9140db458ce767786403879966f3a6db59281bef76a4b) |
+| Code | facilitator [`apps/server`](apps/server) · guard [`packages/guard`](packages/guard) |
 
 **The spending guard** runs inside the agent's payment tool, below the model, so a blocked payment is never signed ([`packages/guard`](packages/guard)). The demo agent's rules:
 1. Only USDT on Whitechain or USDC on Hedera.
@@ -93,11 +135,29 @@ All on testnet. The agent runs on my laptop; its whole log is public on [HashSca
 
 A broken rule is a hard block nobody can approve; only a payment that passes every rule and is over the auto-pay limit goes to the owner. The model's only tools are "find sellers", "read a page" and "buy data", so a page that says "your budget was raised" changes nothing.
 
+<details>
+<summary><b>Only the owner's signature counts</b></summary>
+
+<br>
+
 **Only the owner's signature counts.** The owner sets limits and answers approvals on the agent console, signing with their wallet. Till carries both, but the agent checks the signatures itself:
 - For an approval, the agent picks a random request ID, and the owner signs that ID, the amount and the payee. An answer Till made up, one signed by anyone else, or one from an earlier request is refused ([tests](packages/guard/src/guard.test.ts)).
 - For limits, the agent keeps the newest set the owner signed, so Till can't swap in an older, looser one.
 
+</details>
+
+<details>
+<summary><b>The facilitator, the spending log and the agent's identity</b></summary>
+
+<br>
+
+**Facilitator.** Till's own (`apps/server`). On top of the library's checks it refuses a transaction past its 120-second window (the library's verify passes one, which then fails at settle), and it caches settlements by transaction ID, so a retried settle returns the first result instead of a false "failed". Fallback: x402.org, one line of config.
+
+**Spending log.** HCS topic [`0.0.11155231`](https://hashscan.io/testnet/topic/0.0.11155231). Every payment, approval and block, written by the agent's own key, with the reasons. After each run the agent prints a spend report read back from the mirror node, not from its own memory.
+
 **Agent identity (ERC-8004).** The agent is [agent #154](https://hashscan.io/testnet/contract/0x8004A818BFB912233c491871b3d84c89A494BD9e) in the Identity Registry already on Hedera testnet ([registration](https://hashscan.io/testnet/transaction/0x6a36a9bf4eee48da31e9140db458ce767786403879966f3a6db59281bef76a4b)). The wallet it pays from signed that it belongs to the agent ([transaction](https://hashscan.io/testnet/transaction/0xd9fffa6824292017f84b9aa19d4fb29ed7e716ccb09d3578a30577b7d7bfd6b8)). After each payment, Till checks the payer against the registry, and the dashboard shows "Verified agent #154". The same ID from another wallet doesn't verify.
+
+</details>
 
 <details>
 <summary>The blocked look-alike on the log, and what the agent said</summary>
@@ -115,6 +175,8 @@ The agent, after the block in one run:
 
 </details>
 
+<br>
+
 ## Arkiv
 **In short:** Till keeps two things on Arkiv. A registry of shops, which the agent finds sellers in and the guard checks every payee against. And a receipt for every payment and refund, which the customer's pages read straight from Arkiv. Schemas, friction, reach and why: [`arkiv/`](arkiv/).
 
@@ -122,11 +184,15 @@ The agent, after the block in one run:
 - **Receipts.** After each confirmed payment or refund, the server saves one record (`till.receipt`), off the payment path, and never edits it. The receipt page shows the payment and every refund from them, and still loads with Till's server down. "Your receipts" shows everything one wallet bought from any Till shop, from one query by `payer`. Only the paying wallet's address goes on Arkiv, never an email or name.
 - **Who can write.** Both are written by Till's wallet, `0xffE2359A07d0e193621419008eeE8D7f57f9a326`, and every read filters on it, so a look-alike can't list itself and a fake receipt never shows.
 
+<br>
+
 The demo's records: [one order](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20order_id%20%3D%20str('0x1b44530319fbffb44ec51e0cec380d6bb019806795a05c064ba28d412a40f0b4')%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)) (paid $5, refunded $2 and $3), [one customer](https://rabdi.explorer.arkiv.network/entity-explorer?q=arkiv.schema%20%3D%20str('till.receipt')%20AND%20payer%20%3D%20addr(0x4d0bb1b811810df38344602c0ff2bac8b9bee300)%20AND%20%24owner%20%3D%20addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)) (4 purchases), and [a live refund saved as it happened](https://rabdi.explorer.arkiv.network/tx/0x16a252b9dfa62c9b877cbb6ee32d85925790960238bd0722eabb406c6a1121c7). To run one yourself, paste this into Rabdi's [entity explorer](https://rabdi.explorer.arkiv.network/entity-explorer):
 
 ```
 arkiv.schema = str('till.receipt') AND $owner = addr(0xffe2359a07d0e193621419008eee8d7f57f9a326)
 ```
+
+<br>
 
 ## How it works
 
