@@ -107,9 +107,10 @@ function Feature({ icon, title, children }: { icon: ReactNode; title: string; ch
 const proof: [string, string, string][] = [
   ["A customer paid $5 with just an email, and held no gas", `${WX}0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316`, "Whitechain"],
   ["The merchant refunded $2, then the other $3", `${WX}0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b`, "Whitechain"],
-  ["The guard blocked a look-alike API asking 10× the price", "https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/6", "Hedera log"],
-  ["The agent paid the real shop $0.05 in USDC, no human involved", "https://hashscan.io/testnet/transaction/0.0.11155223@1793901510.215554723", "HashScan"],
+  ["The guard blocked a look-alike API asking 10× the price, to an address Arkiv doesn't list", "https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/26", "Hedera log"],
+  ["The agent found the real shop on Arkiv and paid $0.05 in USDC, no human involved", "https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515", "HashScan"],
   ["An agent paid $0.05 in USDT over x402", `${WX}0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20`, "Whitechain"],
+  ["The merchant refunded an agent's payment, with no gas", `${WX}0x9fb9fb96855ce195d3ed927321db56e359a16bb76b3458b32f5afa7aebfe644c`, "Whitechain"],
 ]
 
 // Read live from Arkiv in the browser: the same records an agent looks sellers up in.
@@ -230,13 +231,19 @@ export function Landing() {
               <ProhibitIcon className="size-3.5" weight="bold" /> blocked before signing
             </p>
             <p className="mt-1 text-primary-foreground/60">· payee not on the allowlist</p>
-            <p className="text-primary-foreground/60">· $0.50 is above the $0.10 per-call cap</p>
-            <p className="mt-4 text-primary-foreground/40"># same agent, the real shop</p>
-            <p>402 · pay $0.05 to the shop</p>
+            <p className="text-primary-foreground/60">· not Brickline's address on Arkiv</p>
+            <p className="text-primary-foreground/60">· $0.50 is above the $0.30 per-call cap</p>
+            <p className="mt-4 text-primary-foreground/40"># same agent, finds the shop on Arkiv</p>
+            <p>402 · pay $0.05 to Brickline</p>
             <p className="mt-1 inline-flex items-center gap-1.5 rounded bg-emerald-400/15 px-2 py-0.5 text-emerald-300">
               <CheckCircleIcon className="size-3.5" weight="fill" /> paid $0.05 USDC on Hedera
             </p>
-            <p className="mt-4 text-primary-foreground/40"># both are on the public log (HCS)</p>
+            <p className="mt-4 text-primary-foreground/40"># $0.25 is over its $0.10 auto-pay limit</p>
+            <p>waiting for the owner… approved on their phone</p>
+            <p className="mt-1 inline-flex items-center gap-1.5 rounded bg-emerald-400/15 px-2 py-0.5 text-emerald-300">
+              <CheckCircleIcon className="size-3.5" weight="fill" /> paid $0.25 USDC on Hedera
+            </p>
+            <p className="mt-4 text-primary-foreground/40"># all of it is on a public log on Hedera</p>
           </div>
         </motion.div>
 
@@ -248,9 +255,9 @@ export function Landing() {
               <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                 {[
                   "Add it in about 20 lines and get paid in USDT on Whitechain.",
-                  "Customers pay with an email. The shop covers the gas, under a thousandth of a WBT a payment.",
+                  "Customers pay with just an email. They never hold gas: the shop prepays it from a gas tank, in USDT.",
                   "Agents pay per call over x402. No account or API key.",
-                  "Refund in one click, in full or in part. A CSV for the accountant.",
+                  "Refund people and agents in one click, in full or in part. A CSV for the accountant.",
                   "Sign in with Till: know which customer paid, with no accounts to run.",
                 ].map(t => (
                   <li key={t} className="flex gap-2">
@@ -266,9 +273,10 @@ export function Landing() {
               <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                 {[
                   "Limits live in the agent's wallet, below the model, so a web page can't change them.",
-                  "Only known payees, a cap per call, a daily budget.",
-                  "A blocked payment is never signed.",
-                  "Every payment and every block goes on a public log on Hedera.",
+                  "Only known payees, at the address the seller lists on Arkiv. A cap per call, a daily budget.",
+                  "Wrong is blocked outright. Unusual, above the auto-pay limit, waits for the owner's OK on their phone.",
+                  "Limits and approvals count only when the owner's wallet signs them, so not even Till can change them.",
+                  "Every payment, approval and block goes on a public log on Hedera.",
                 ].map(t => (
                   <li key={t} className="flex gap-2">
                     <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-brand" weight="fill" />
@@ -280,9 +288,9 @@ export function Landing() {
           </StaggerGrid>
         </Section>
 
-        <Section eyebrow="Why the limit lives in the wallet" title="A poisoned link fooled every model we tried. The guard caught every one.">
+        <Section eyebrow="Why the limit lives in the wallet" title="A poisoned link fooled every model I tried. The guard caught every one.">
           <p className="mt-4 max-w-2xl text-muted-foreground">
-            We ran the attack 27 times on Claude Haiku, Sonnet and Opus. Injected instructions didn't work. But a review page linking to a look-alike API fooled every model, every time, because nothing on the page gives it away. Only the payment request shows the real price and payee, and that's where Till checks.
+            I ran the attack 27 times on Claude Haiku, Sonnet and Opus. Injected instructions didn't work. But a review page linking to a look-alike API fooled every model, every time, because nothing on the page gives it away. Only the payment request shows the real price and payee, and that's where Till checks.
           </p>
           <StaggerGrid className="mt-8 grid gap-3 sm:grid-cols-3">
             <Card className="gap-0 p-5">
@@ -297,7 +305,7 @@ export function Landing() {
             </Card>
             <Card className="gap-0 p-5">
               <CheckCircleIcon className="size-5 text-brand" weight="fill" />
-              <p className="mt-3 text-sm">Pointed at the real shop, the agent pays $0.05 in USDC on Hedera, with no human approving.</p>
+              <p className="mt-3 text-sm">With no link, it finds the real shop on Arkiv and pays $0.05 in USDC on Hedera, with no human approving.</p>
             </Card>
           </StaggerGrid>
         </Section>
@@ -318,13 +326,13 @@ export function Landing() {
         <Section eyebrow="Built on" title="Each chain does one job. The merchant never sees any of it.">
           <StaggerGrid className="mt-8 grid gap-4 sm:grid-cols-3">
             <Feature icon={<EnvelopeSimpleIcon />} title="Whitechain: the money">
-              USDT payments with no gas for the payer, through our relayer and a small verified contract that caps refunds at what was paid.
+              USDT payments with no gas for the payer, through Till's relayer and a small verified contract that caps refunds at what was paid.
             </Feature>
             <Feature icon={<RobotIcon />} title="Hedera: the agents">
-              Agents pay in USDC over x402 through a facilitator we run, and every payment or block goes on a public HCS log.
+              Agents pay in USDC over x402 through a facilitator Till runs. Every payment, approval or block goes on a public HCS log, and the agent's identity is on ERC-8004.
             </Feature>
-            <Feature icon={<DatabaseIcon />} title="Arkiv: the receipts">
-              Every receipt is saved on Arkiv. The receipt page reads it from there, so it doesn't depend on the shop, or on us.
+            <Feature icon={<DatabaseIcon />} title="Arkiv: receipts and sellers">
+              Every receipt and every shop's listing is on Arkiv. Receipts load without the shop or Till, and agents find sellers there.
             </Feature>
           </StaggerGrid>
         </Section>
