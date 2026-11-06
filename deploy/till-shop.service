@@ -5,6 +5,8 @@ After=till-server.service
 [Service]
 User=till
 WorkingDirectory=/home/till/till/apps/shop
+# The shop checks the server's x402 facilitator on startup, so wait for the server first.
+ExecStartPre=/bin/sh -c 'for i in $(seq 30); do curl -sf http://localhost:3001/health >/dev/null && exit 0; sleep 1; done; exit 0'
 ExecStart=/home/till/.bun/bin/bun run start
 Restart=always
 RestartSec=3
