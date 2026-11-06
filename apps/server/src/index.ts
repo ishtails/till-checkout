@@ -8,6 +8,7 @@ import { gas } from "./gas"
 import { orders } from "./orders"
 import { pay } from "./pay"
 import { refund } from "./refund"
+import { publishRegistry, registry } from "./registry"
 import { signin } from "./signin"
 import { relayerStatus } from "./relayer"
 
@@ -23,6 +24,10 @@ app.route("/", gas)
 app.route("/", faucet)
 app.route("/", signin)
 app.route("/", approvals)
+app.route("/", registry)
+
+// List merchants on Arkiv in the background: a save takes a few seconds and startup shouldn't wait.
+void publishRegistry()
 
 console.log(`Till server on http://localhost:${config.port}`)
 export default { port: config.port, fetch: app.fetch }

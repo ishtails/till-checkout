@@ -20,6 +20,7 @@ const merchants: Merchant[] = JSON.parse(readFileSync(config.merchantsFile, "utf
 }))
 
 export const findMerchantByKey = (apiKey: string) => merchants.find(m => m.apiKey === apiKey)
+export const allMerchants = () => merchants
 export const findMerchant = (id: string) => merchants.find(m => m.id === id)
 export const findMerchantByPayTo = (payTo: string) =>
   merchants.find(m => m.evmAddress.toLowerCase() === payTo.toLowerCase() || m.hederaAccountId === payTo)
