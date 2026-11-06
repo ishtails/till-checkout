@@ -83,13 +83,17 @@ export function Landing() {
       </header>
 
       <main className="mx-auto max-w-5xl px-5">
-        <div className="py-14 sm:py-24">
-          <Badge variant="neutral">Built at ETHGlobal Mumbai · live on testnet</Badge>
-          <h1 className="mt-5 max-w-3xl text-4xl leading-[1.05] sm:text-6xl">Get paid by people and AI agents that can't be tricked into overpaying.</h1>
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
+        <div className="pt-14 pb-10 sm:pt-24">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both">
+            <Badge variant="neutral">Built at ETHGlobal Mumbai · live on testnet</Badge>
+          </div>
+          <h1 className="mt-5 max-w-3xl text-4xl leading-[1.05] text-balance animate-in fade-in slide-in-from-bottom-4 delay-100 duration-700 fill-mode-both sm:text-6xl">
+            Get paid by people and AI agents that can't be tricked into overpaying.
+          </h1>
+          <p className="mt-6 max-w-2xl text-lg text-pretty text-muted-foreground animate-in fade-in slide-in-from-bottom-4 delay-200 duration-700 fill-mode-both">
             Till is a checkout a shop adds in about 20 lines. People pay in USDT with just an email and no gas. AI agents pay per API call, inside limits they can't be talked out of. Refunds take one click.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-3 animate-in fade-in slide-in-from-bottom-4 delay-300 duration-700 fill-mode-both">
             <Button variant="brand" size="lg" onClick={() => (location.href = SHOP)}>
               See the demo
               <ArrowRightIcon />
@@ -99,7 +103,46 @@ export function Landing() {
               Read the code
             </Button>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">The demo shop sells a $0.10 report. Sign in with any email and you get free test USDT to buy it.</p>
+          <p className="mt-4 text-sm text-muted-foreground animate-in fade-in delay-300 duration-700 fill-mode-both">
+            The demo shop sells a $0.10 report. Sign in with any email and you get free test USDT to buy it.
+          </p>
+        </div>
+
+        {/* The product at a glance: what a customer sees, and what the agent's guard does. */}
+        <div className="mb-16 grid gap-4 rounded-3xl bg-secondary/60 p-4 ring-1 ring-foreground/5 animate-in fade-in slide-in-from-bottom-8 delay-500 duration-1000 fill-mode-both sm:mb-24 sm:p-8 md:grid-cols-2">
+          <Card className="gap-0 p-6">
+            <p className="text-sm text-muted-foreground">Mumbai Rent Data</p>
+            <p className="mt-1 text-lg font-medium">Mumbai rent report</p>
+            <p className="mt-4 text-5xl font-semibold tracking-tight tabular-nums">$0.10</p>
+            <p className="mt-1 text-xs text-muted-foreground">USDT on Whitechain · no gas to pay</p>
+            <div className="mt-6 flex items-center justify-between rounded-lg bg-muted px-3 py-2.5 text-sm">
+              <span className="text-muted-foreground">you@example.com</span>
+              <span className="font-medium tabular-nums">0.20 USDT</span>
+            </div>
+            <div className="mt-3 flex h-12 items-center justify-center gap-2 rounded-md bg-brand text-base font-medium text-brand-foreground">
+              <CheckCircleIcon className="size-5" weight="fill" />
+              Paid
+            </div>
+            <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <DatabaseIcon className="size-3.5" /> Receipt saved on Arkiv
+            </p>
+          </Card>
+          <div className="overflow-hidden rounded-xl bg-primary p-6 font-mono text-[12.5px] leading-relaxed text-primary-foreground/80 shadow-xs">
+            <p className="text-primary-foreground/40"># the agent follows a review page's link</p>
+            <p>GET look-alike.api/data?area=Bandra</p>
+            <p className="mt-1">402 · pay $0.50 to 0.0.6660666</p>
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded bg-destructive/20 px-2 py-0.5 text-red-300">
+              <ProhibitIcon className="size-3.5" weight="bold" /> blocked before signing
+            </p>
+            <p className="mt-1 text-primary-foreground/60">· payee not on the allowlist</p>
+            <p className="text-primary-foreground/60">· $0.50 is above the $0.10 per-call cap</p>
+            <p className="mt-4 text-primary-foreground/40"># same agent, the real shop</p>
+            <p>402 · pay $0.05 to the shop</p>
+            <p className="mt-1 inline-flex items-center gap-1.5 rounded bg-emerald-400/15 px-2 py-0.5 text-emerald-300">
+              <CheckCircleIcon className="size-3.5" weight="fill" /> paid $0.05 USDC on Hedera
+            </p>
+            <p className="mt-4 text-primary-foreground/40"># both are on the public log (HCS)</p>
+          </div>
         </div>
 
         <Section eyebrow="Two halves" title="A checkout for the shop, and a spending guard for the agent.">
