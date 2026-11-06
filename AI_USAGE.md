@@ -32,7 +32,8 @@
 
 ## Assets
 - The demo video is recorded in my own voice. No AI voice and no text-to-speech.
-- _(Logo and cover: add how they were made once they exist.)_
+- The logo was generated with Google Gemini from my brief (a till drawer, flat deep green), then resized.
+- The cover and screenshots are real captures of the live site and HashScan; the cover was laid out in HTML by Claude Code from those captures.
 
 ## Claude inside the product
 The demo's AI agent is Claude, run headless on the `claude` CLI with only our two wallet tools. The spending guard (`packages/guard`) sits below the model, in the wallet, and stops it when a page tricks it.
