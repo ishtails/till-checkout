@@ -135,6 +135,7 @@ export const api = {
   agentRefundInfo: (key: string) => call<AgentRefundInfo>(`/v1/agent-payments/${encodeURIComponent(key)}/refund`),
   agentRefund: (key: string, body: { amount: string; nonce: Hex; validBefore: number; signature: Hex }) =>
     call<{ txHash: Hex }>(`/v1/agent-payments/${encodeURIComponent(key)}/refund`, { method: "POST", body: JSON.stringify(body) }),
+  merchant: (id: string) => call<{ id: string; name: string; wallet: Address }>(`/v1/merchants/${id}`),
   signinInfo: (merchant: string) => call<{ merchant: string; name: string }>(`/v1/signin/${merchant}`),
   signin: (body: { merchant: string; address: Address; issuedAt: string; signature: Hex; returnUrl: string }) =>
     call<{ redirect: string }>("/v1/signin", { method: "POST", body: JSON.stringify(body) }),

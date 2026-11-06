@@ -94,6 +94,14 @@ orders.get("/v1/orders", c => {
   return c.json(store.listOrders(merchantId).map(publicOrder))
 })
 
+// A shop's public identity: its name and the wallet it's paid to (already public in every payment).
+// The dashboard uses it to open only for that wallet.
+orders.get("/v1/merchants/:id", c => {
+  const merchant = findMerchant(c.req.param("id"))
+  if (!merchant) return c.json({ error: "no such shop" }, 404)
+  return c.json({ id: merchant.id, name: merchant.name, wallet: merchant.evmAddress })
+})
+
 orders.get("/v1/merchant", c => {
   const merchant = merchantFromAuth(c.req.header("authorization"))
   if (!merchant) return c.json({ error: "bad api key" }, 401)

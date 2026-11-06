@@ -27,7 +27,7 @@ Something wrong is blocked outright. Something only unusual, like a bigger payme
 
 ## What happens, with proof
 
-**Try it:** [buy the $0.10 report](https://shop.till.ishtails.xyz) with any email (the test USDT is free), then see the [shop's dashboard](https://pay.till.ishtails.xyz/dashboard/data-shop) (no sign-in needed to look). The [agent console](https://pay.till.ishtails.xyz/agent/154) opens only for the agent's owner.
+**Try it:** [buy the $0.10 report](https://shop.till.ishtails.xyz) with any email (the test USDT is free), then see [Your receipts](https://pay.till.ishtails.xyz/receipts). The shop's [dashboard](https://pay.till.ishtails.xyz/dashboard/data-shop) opens only for the shop's wallet, and the [agent console](https://pay.till.ishtails.xyz/agent/154) only for the agent's owner; the video and screenshots show both.
 
 1. **A person pays with just an email.** Till's relayer pays the gas; the customer holds no WBT. [Payment](https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316)
 2. **An agent is tricked; its wallet isn't.** A review page links to a look-alike API asking $0.50 to a stranger. The guard blocks it before signing: not on its list, not Brickline's address on Arkiv, over the $0.30 cap. [The block, on Hedera](https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11155231/messages/26) · [Brickline's listing on Arkiv](https://rabdi.explorer.arkiv.network/entity-explorer?q=%24key%20%3D%20key(0x2b22a7b395f4d97cef1632c54ea44733bab048ee2e0aae80ec6ea0ff996efdc2))

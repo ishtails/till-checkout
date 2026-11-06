@@ -53,6 +53,9 @@ function Stat({ icon, label, value, note }: { icon: React.ReactNode; label: stri
 // The merchant's view (no login of its own in this demo; see the README). A refund needs the
 // merchant's signature, so the Refund button works only for the wallet the order was paid to.
 export function Dashboard({ merchantId }: { merchantId: string }) {
+  // The shop's name and wallet: the dashboard opens only for that wallet.
+  const [shop, setShop] = useState<{ name: string; wallet: string } | "missing">()
+  useEffect(() => void api.merchant(merchantId).then(setShop, () => setShop("missing")), [merchantId])
   const { ready, authenticated, login, logout, user } = usePrivy()
   const { wallets } = useWallets()
   const { signTypedData } = useSignTypedData()
@@ -201,8 +204,10 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
     }
   }
 
-  const merchantWallet = orders?.find(o => o.paidTo)?.paidTo
-  const wrongWallet = authenticated && address && merchantWallet && merchantWallet.toLowerCase() !== address.toLowerCase()
+  const merchantWallet = shop && shop !== "missing" ? shop.wallet : undefined
+  const isMerchant = !!address && !!merchantWallet && merchantWallet.toLowerCase() === address.toLowerCase()
+  const wrongWallet = authenticated && address && merchantWallet && !isMerchant
+  const email = user?.email?.address ?? user?.google?.email
   const switchAccount = async () => {
     await logout()
     login()
@@ -225,6 +230,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
             <AccountMenu
               email={user?.email?.address ?? user?.google?.email}
               address={address}
+              role={shop && shop !== "missing" ? (isMerchant ? { label: `${shop.name}'s wallet`, ok: true } : { label: `Not ${shop.name}'s wallet (${short(shop.wallet)})`, ok: false }) : undefined}
               details={balance !== undefined && <>{balance.toFixed(2)} USDT</>}
               onSwitch={switchAccount}
               onSignOut={() => void logout()}
@@ -237,6 +243,36 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
         </div>
       </header>
 
+      {!ready || !shop ? (
+        <main className="mx-auto max-w-md px-4 py-16 text-center">
+          <Muted>Loading…</Muted>
+        </main>
+      ) : shop === "missing" ? (
+        <main className="mx-auto max-w-md px-4 py-16 text-center">
+          <h1 className="text-xl">No shop "{merchantId}" on Till</h1>
+          <Muted className="mt-2">Check the link, or open <a className="text-brand hover:underline" href="/dashboard/data-shop">/dashboard/data-shop</a>.</Muted>
+        </main>
+      ) : !authenticated ? (
+        <main className="mx-auto max-w-md px-4 py-16 text-center">
+          <h1 className="text-xl">{shop.name}'s dashboard</h1>
+          <Muted className="mt-2">Only the shop can open this: its orders, refunds, agent payments and gas tank.</Muted>
+          <Button size="lg" className="mt-6" onClick={login}>
+            Merchant sign in
+          </Button>
+        </main>
+      ) : !isMerchant ? (
+        <main className="mx-auto max-w-md px-4 py-16 text-center">
+          <h1 className="text-xl">This account isn't {shop.name}'s</h1>
+          <Muted className="mt-2">
+            You're signed in as {email ?? "this account"}
+            {address && <> with wallet <span className="font-mono">{short(address)}</span></>}. {shop.name} is paid to{" "}
+            <span className="font-mono">{short(shop.wallet)}</span>.
+          </Muted>
+          <Button size="lg" className="mt-6" onClick={switchAccount}>
+            Switch account
+          </Button>
+        </main>
+      ) : (
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="grid gap-3 sm:grid-cols-3">
           <Stat icon={<ShoppingBagIcon weight="fill" />} label="Received from customers" value={`$${received.toFixed(2)}`} note={`${orders?.length ?? 0} orders, after refunds`} />
@@ -272,7 +308,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-warning/20 px-4 py-3 text-sm text-warning-foreground">
             <span className="flex items-center gap-2">
               <WarningCircleIcon className="size-4 shrink-0" weight="fill" />
-              You're signed in as {user?.email?.address ?? user?.google?.email}. Refunds need the shop's wallet ({short(merchantWallet!)}).
+              You're signed in as {email}. Refunds need the shop's wallet ({short(merchantWallet!)}).
             </span>
             <Button variant="outline" size="sm" onClick={switchAccount}>
               Switch account
@@ -434,6 +470,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
           )}
         </Card>
       </main>
+      )}
 
       <AlertDialog open={!!confirming} onOpenChange={open => !open && setConfirming(undefined)}>
         <AlertDialogContent>
