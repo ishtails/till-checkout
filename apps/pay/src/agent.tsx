@@ -1,5 +1,5 @@
 import { usePrivy, useSignMessage, useWallets } from "@privy-io/react-auth"
-import { CheckCircleIcon, HandPalmIcon, PauseCircleIcon, ProhibitIcon, RobotIcon, ShieldCheckIcon, WalletIcon } from "@phosphor-icons/react"
+import { CheckCircleIcon, HandPalmIcon, PauseCircleIcon, ProhibitIcon, RobotIcon, SealCheckIcon, ShieldCheckIcon, WalletIcon } from "@phosphor-icons/react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { Address, Hex } from "viem"
@@ -7,6 +7,7 @@ import { limitsMessage, limitsOf, limitsProblem, type Limits } from "@till/guard
 import { api, type AgentInfo, type Approval } from "./api"
 import { Input } from "./components/ui/input"
 import { entityExplorer, registry, type ListingRecord } from "./arkiv"
+import { readAgent, RESEARCH_AGENT_ID, type AgentIdentity } from "@till/identity"
 import { friendly } from "./lib/errors"
 import { Badge, Button, Card, Logo, Muted, RecordLink } from "./ui"
 
@@ -81,6 +82,34 @@ function OnArkiv({ listing, payTo, loading }: { listing?: ListingRecord; payTo: 
   )
 }
 
+// The agent's registered identity, and whether the log this console reads is the one its owner registered.
+function IdentityCard({ identity, topicId }: { identity?: AgentIdentity | "error"; topicId?: string }) {
+  if (!identity) return <Muted className="mt-4">Reading the agent's identity on Hedera…</Muted>
+  if (identity === "error") return <Muted className="mt-4">Couldn't read the agent's identity on Hedera just now.</Muted>
+  const logMatches = !!topicId && identity.hcsTopic === topicId
+  return (
+    <Card className="mt-6 gap-0 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 font-medium">
+            <SealCheckIcon className="size-4 text-brand" weight="fill" />
+            Registered agent #{identity.agentId}
+            <span className="text-xs font-normal text-muted-foreground">ERC-8004 on Hedera</span>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Owned by <span className="font-mono">{short(identity.owner)}</span>. Pays from <span className="font-mono">{short(identity.wallet)}</span> on Whitechain
+            (that wallet signed that it's this agent's) and <span className="font-mono">{identity.hederaAccount}</span> on Hedera. Shops it pays see it as a verified agent.
+          </p>
+          <p className={`mt-1 text-xs ${logMatches ? "text-muted-foreground" : "text-destructive"}`}>
+            {logMatches ? `The log below (${topicId}) is the one its owner registered.` : `This log (${topicId ?? "none"}) isn't the one its owner registered (${identity.hcsTopic ?? "none"}).`}
+          </p>
+        </div>
+        <RecordLink href={identity.explorerUrl}>Registry on HashScan</RecordLink>
+      </div>
+    </Card>
+  )
+}
+
 export function AgentConsole() {
   const { ready, authenticated, login, logout } = usePrivy()
   const { wallets } = useWallets()
@@ -89,6 +118,7 @@ export function AgentConsole() {
   const [approvals, setApprovals] = useState<Approval[]>()
   const [log, setLog] = useState<Entry[]>()
   const [listed, setListed] = useState<ListingRecord[]>()
+  const [identity, setIdentity] = useState<AgentIdentity | "error">()
   const [busy, setBusy] = useState<string>()
   // The limits being edited, as typed (strings), or undefined when not editing.
   const [draft, setDraft] = useState<{ daily: string; auto: string; merchants: Record<string, { call: string; day: string }> }>()
@@ -101,6 +131,8 @@ export function AgentConsole() {
     api.agent().then(setInfo, e => toast.error(friendly(e.message)))
     // The same registry the agent finds sellers in, read from Arkiv in the browser.
     registry.list().then(setListed, () => setListed([]))
+    // Its ERC-8004 entry on Hedera, read in the browser: who owns it, the wallet it pays from, its log.
+    readAgent(RESEARCH_AGENT_ID).then(setIdentity, () => setIdentity("error"))
   }, [])
 
   // Approvals every 2 s (the agent is waiting); the Hedera log every 4 s.
@@ -230,6 +262,8 @@ export function AgentConsole() {
           </div>
           {info?.topicId && <RecordLink href={`https://hashscan.io/testnet/topic/${info.topicId}`}>Log on HashScan · {info.topicId}</RecordLink>}
         </div>
+
+        <IdentityCard identity={identity} topicId={info?.topicId ?? undefined} />
 
         {pending.map(a => (
           <Card key={a.id} className="mt-6 gap-0 border-warning/60 bg-warning/10 p-5 ring-2 ring-warning/30">
