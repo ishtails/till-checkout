@@ -39,6 +39,9 @@ export type Settlement = {
   response: unknown // the SettleResponse returned the first time, returned again on a retry
   refunded?: string // atomic, Whitechain only (agent-refund.ts)
   refunds?: { amount: string; tx: Hex; ts: number }[]
+  // The paying agent's ERC-8004 identity, when it named one (identity.ts). verified: the payer is
+  // the wallet the registry lists for that agent.
+  agent?: { agentId: string; registry: string; owner?: string; verified: boolean }
 }
 
 // A payment the agent's guard paused for its owner: allowed by every rule, but above the auto-pay limit.

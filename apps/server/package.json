@@ -7,13 +7,14 @@
     "start": "bun --env-file=../../.env src/index.ts"
   },
   "dependencies": {
+    "@till/guard": "workspace:*",
+    "@till/identity": "workspace:*",
     "@till/receipts": "workspace:*",
     "@x402/core": "2.28.0",
     "@x402/evm": "2.28.0",
     "@x402/hedera": "2.28.0",
     "hono": "4.13.16",
-    "viem": "2.57.16",
-    "@till/guard": "workspace:*"
+    "viem": "2.57.16"
   },
   "devDependencies": {
     "@types/bun": "1.4.4"

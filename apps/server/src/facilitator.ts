@@ -22,6 +22,7 @@ import { config } from "./config"
 import { findMerchantByPayTo } from "./merchants"
 import { capReached, recordFee } from "./relayer"
 import { store } from "./store"
+import { identify } from "./identity"
 
 // Our x402 facilitator (D2: the same service and hot wallet as the relayer).
 // The library checks signature, recipient, amount, validity window, unused nonce, balance and simulates.
@@ -122,7 +123,7 @@ async function settle(paymentPayload: PaymentPayload, requirements: PaymentRequi
   if (response.success) {
     const merchant = findMerchantByPayTo(requirements.payTo)!
     if (requirements.network === WHITECHAIN) await recordFee(merchant.id, response.transaction as Hex)
-    store.putSettlement({
+    const settlement = {
       key,
       merchantId: merchant.id,
       network: requirements.network,
@@ -133,7 +134,10 @@ async function settle(paymentPayload: PaymentPayload, requirements: PaymentRequi
       transaction: response.transaction,
       ts: Date.now(),
       response,
-    })
+    }
+    store.putSettlement(settlement)
+    // In the background: who the paying agent is, checked against its ERC-8004 entry.
+    void identify(settlement, paymentPayload)
   }
   return response
 }
