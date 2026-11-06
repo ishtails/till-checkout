@@ -1,0 +1,33 @@
+# Till
+
+> A checkout that people and AI agents can both pay. People pay in USDT on Whitechain with just an email and no gas. AI agents pay per API call over x402 (USDT on Whitechain, USDC on Hedera), inside spending limits their owner signs, and a guard in the agent's wallet blocks a tricked payment before anything is signed. Refunds take one click. Receipts and the merchant registry are on Arkiv. Built solo at ETHGlobal Mumbai 2026 for Whitechain (Operate, Scale), Hedera (AI Agents That Pay) and Arkiv.
+
+## Links
+- [Demo video, 3:51](https://www.youtube.com/watch?v=ztqHb8Y0Uu0)
+- [Source and README, every transaction linked](https://github.com/ishtails/till-checkout)
+- [Docs](https://till.ishtails.xyz/docs)
+- [Demo shop](https://shop.till.ishtails.xyz)
+- [Merchant dashboard (opens for the shop's wallet only)](https://pay.till.ishtails.xyz/dashboard/data-shop)
+- [Agent console (opens for the agent's owner only)](https://pay.till.ishtails.xyz/agent/154)
+
+## Whitechain: Operate and Scale
+- Drop-in checkout SDK, added to a separate demo shop in about 20 lines: https://github.com/ishtails/till-checkout/blob/main/apps/shop/src/index.ts
+- Verified Checkout contract on Whitechain Sepolia (1874): https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6
+- USDT payment from an email wallet, gasless (EIP-3009 transferWithAuthorization), sent by Till's own relayer: https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316
+- Partial refund, one click: https://explorer.testnet.whitechain.io/tx/0xf59305f59aec54c8fa918dc1be9160823081b498dec32f240e9e67a30fdc4b8b
+- AI agent paying USDT over x402 through Till's own facilitator: https://explorer.testnet.whitechain.io/tx/0xb2f54cf5653ff2fdbd92bfe9da6be213a8191cdc19a65ef7a7dbae1119c6eb20
+- Gas: the shop prepays a USDT gas tank (real fee + 10%); relayer drain protection and WBT source are in the README.
+- Builder feedback: https://github.com/ishtails/till-checkout/blob/main/WHITECHAIN_FEEDBACK.md
+
+## Hedera: AI Agents That Pay (x402)
+- x402 endpoint settling USDC (HTS) on Hedera testnet through Till's own facilitator (replay and expiry checks): https://github.com/ishtails/till-checkout/tree/main/apps/server
+- Settled payment, no human approving: https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515
+- Spending guard, checked below the model before signing (allowlist, per-call, per-merchant and daily caps, owner approval above $0.10): https://github.com/ishtails/till-checkout/tree/main/packages/guard
+- Owner-approved $0.25 payment: https://hashscan.io/testnet/transaction/0.0.11155223@1793980598.791514015
+- ERC-8004 agent identity, agent #154: https://hashscan.io/testnet/transaction/0x6a36a9bf4eee48da31e9140db458ce767786403879966f3a6db59281bef76a4b
+- HCS audit log of every payment, approval and block: https://hashscan.io/testnet/topic/0.0.11155231
+
+## Arkiv
+- Merchant registry: the agent finds sellers in it and the guard checks every payee against it: https://rabdi.explorer.arkiv.network/entity-explorer?q=%24key%20%3D%20key(0x2b22a7b395f4d97cef1632c54ea44733bab048ee2e0aae80ec6ea0ff996efdc2)
+- Receipts for every payment and refund, read in the browser from Arkiv: https://github.com/ishtails/till-checkout/tree/main/arkiv
+- Writer wallet: 0xffE2359A07d0e193621419008eeE8D7f57f9a326

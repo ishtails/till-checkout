@@ -30,6 +30,22 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- What crawlers and AI readers see without JavaScript. -->
+    <noscript>
+<h1>Till: get paid by people and AI agents that can't be tricked into overpaying</h1>
+<p>Till is a checkout a shop adds in about 20 lines. People pay in USDT on Whitechain with just an email: no wallet app, no gas, no seed phrase. AI agents pay per API call over x402, in USDT on Whitechain or USDC on Hedera, inside spending limits their owner signs. Refunds, full or partial, take one click. Receipts and the merchant registry live on Arkiv. Built solo at ETHGlobal Mumbai 2026.</p>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=ztqHb8Y0Uu0">Demo video (3:51)</a></li>
+<li><a href="https://github.com/ishtails/till-checkout">Source code and README with every transaction linked</a></li>
+<li><a href="https://till.ishtails.xyz/docs">Docs</a> · <a href="https://shop.till.ishtails.xyz">Demo shop (Brickline)</a> · <a href="/llms.txt">llms.txt</a></li>
+</ul>
+<h2>Whitechain (Operate and Scale)</h2>
+<p>Drop-in checkout SDK, merchant dashboard, customer checkout and receipts, one-click full and partial refunds, CSV export, signed webhooks. Gasless EIP-3009 transferWithAuthorization through Till's own relayer; the shop prepays gas from a USDT gas tank. AI agents pay USDT over x402 through Till's own facilitator. <a href="https://explorer.testnet.whitechain.io/address/0xa4eBC27F8ba275d765DE0aECa7Fa1C09204dEeb6">Verified Checkout contract</a> · <a href="https://explorer.testnet.whitechain.io/tx/0x46461259c098277b64f7372f40e2a217831b7ec6fb20eaf0eb08cdafa54e7316">USDT payment</a>.</p>
+<h2>Hedera (AI Agents That Pay, x402)</h2>
+<p>x402 endpoint settling USDC (HTS) on Hedera testnet through Till's own facilitator. A research agent finds the seller on Arkiv and pays with no human approving; a spending guard in its wallet blocks a tricked payment before signing (allowlist, per-call, per-merchant and daily caps, owner approval above $0.10). ERC-8004 agent identity (agent #154). Every payment, approval and block on an HCS audit log. <a href="https://hashscan.io/testnet/transaction/0.0.11155223@1793960375.693637515">Settled payment</a> · <a href="https://hashscan.io/testnet/topic/0.0.11155231">HCS topic 0.0.11155231</a>.</p>
+<h2>Arkiv</h2>
+<p>A merchant registry the agent discovers sellers in and the guard checks every payee against, and a receipt for every payment and refund, read straight from Arkiv by the customer's pages. <a href="https://github.com/ishtails/till-checkout/tree/main/arkiv">Schema, friction, reach, why Arkiv</a>.</p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
