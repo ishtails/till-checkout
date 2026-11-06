@@ -37,7 +37,7 @@ const layout = (title: string, body: unknown) => html`<!doctype html>
         .lead { font-size: 18px; color: var(--muted); max-width: 30em; margin: 0 0 28px; }
         .btn { display: inline-flex; align-items: center; gap: 10px; font: 600 16px Inter, sans-serif; background: var(--ink); color: #fff; border: 0; border-radius: 12px; padding: 14px 22px; cursor: pointer; transition: transform .08s, background .15s; }
         .btn:hover { background: #2d2820; } .btn:active { transform: translateY(1px); }
-        .btn .price { background: rgba(255,255,255,.14); padding: 2px 8px; border-radius: 8px; font-weight: 500; }
+        .btn { text-decoration: none; } .btn .price { background: rgba(255,255,255,.14); padding: 2px 8px; border-radius: 8px; font-weight: 500; }
         .note { font-size: 13px; color: var(--muted); margin-top: 12px; display: flex; align-items: center; gap: 6px; }
         .dot { width: 6px; height: 6px; border-radius: 99px; background: var(--till); display: inline-block; }
         .pulse { animation: pulse 1.2s ease-in-out infinite; } @keyframes pulse { 50% { opacity: .25; } }
@@ -141,7 +141,7 @@ export const home = (rows: Row[]) =>
     `,
   )
 
-export const report = (rows: Row[]) =>
+export const report = (rows: Row[], orderId: string) =>
   layout(
     "Your report · Brickline",
     html`
@@ -156,7 +156,10 @@ export const report = (rows: Row[]) =>
             ${rows.map(r => html`<tr><td>${r.area}</td><td class="num">${rupees(r.bhk2)}</td><td class="num">${rupees(r.bhk1)}</td></tr>`)}
           </table>
         </div>
-        <p class="note" style="margin-top:20px"><a href="/">← Back to the shop</a></p>
+        <div style="margin-top:20px;display:flex;flex-wrap:wrap;align-items:center;gap:16px">
+          <a class="btn" href="/report.csv?order=${orderId}" download>Download CSV</a>
+          <a class="note" style="margin:0" href="/">← Back to the shop</a>
+        </div>
       </main>
     `,
   )

@@ -44,17 +44,33 @@ app.onError((err, c) => (err.message.includes("webhook signature") ? c.text("bad
 
 app.get("/", c => c.html(home(rentData)))
 
+// The webhook normally arrives first; reading the order covers a missed one, or a restart.
+async function checkPaid(orderId: string): Promise<"paid" | "open" | "unknown"> {
+  if (unlocked.has(orderId)) return "paid"
+  const order = orderId ? await checkout.getOrder(orderId).catch(() => undefined) : undefined
+  if (!order) return "unknown"
+  if (order.status === "open") return "open"
+  unlockReport(orderId)
+  return "paid"
+}
+
 app.get("/thanks", async c => {
   const orderId = c.req.query("order") ?? ""
-  // The webhook normally arrives first; reading the order covers a missed one.
-  if (!unlocked.has(orderId) && orderId) {
-    const order = await checkout.getOrder(orderId).catch(() => undefined)
-    if (!order) return c.redirect("/")
-    if (order.status !== "open") unlockReport(orderId)
-  }
-  if (unlocked.has(orderId)) return c.html(report(rentData))
+  const state = await checkPaid(orderId)
+  if (state === "unknown") return c.redirect("/")
+  if (state === "paid") return c.html(report(rentData, orderId))
   c.header("Refresh", "3") // check again in a few seconds, until the payment lands
   return c.html(waiting())
+})
+
+// The paid report as a spreadsheet.
+app.get("/report.csv", async c => {
+  const orderId = c.req.query("order") ?? ""
+  if ((await checkPaid(orderId)) !== "paid") return c.redirect("/")
+  const csv = ["area,2bhk_inr_per_month,1bhk_inr_per_month", ...rentData.map(r => `${r.area},${r.bhk2},${r.bhk1}`)].join("\n")
+  c.header("Content-Type", "text/csv; charset=utf-8")
+  c.header("Content-Disposition", 'attachment; filename="brickline-mumbai-rent-index-nov-2026.csv"')
+  return c.body(csv + "\n")
 })
 
 console.log(`Demo shop on ${SHOP_URL}`)
