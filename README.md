@@ -3,18 +3,14 @@
   <img src="assets/cover@2x.png" alt="Till: get paid by people and AI agents that can't be tricked into overpaying" width="880">
 </p>
 
-<h1 align="center">Till</h1>
+# Till
 
-<p align="center"><b>Get paid by people and AI agents that can't be tricked into overpaying.</b></p>
+**Get paid by people and AI agents that can't be tricked into overpaying.**
 
-<p align="center">
-  A checkout for small online sellers: people pay in USDT with an email and no gas, agents pay per API call with no sign-up, and refunds take one click.<br>
-  A spending guard for the agent's owner: its limits are checked before anything is signed, and every payment and blocked attempt is a public record.
-</p>
+- **A checkout for small online sellers.** People pay in USDT with an email and no gas, agents pay per API call with no sign-up, and refunds take one click.
+- **A spending guard for the agent's owner.** Its limits are checked before anything is signed, and every payment and blocked attempt is a public record.
 
-<p align="center">
-  <a href="https://till.ishtails.xyz"><b>Try it live</b></a> · Demo video <i>(link added once recorded)</i> · <a href="https://till.ishtails.xyz/docs">Docs</a> · <a href="design/">Specs</a> · Built solo at ETHGlobal Mumbai, 5–7 Nov 2026
-</p>
+[**Try it live**](https://till.ishtails.xyz) · Demo video *(link added once recorded)* · [Docs](https://till.ishtails.xyz/docs) · [Specs](design/) · Built solo at ETHGlobal Mumbai, 5–7 Nov 2026
 
 ## Why I built it
 
