@@ -90,8 +90,14 @@ export function Receipt({ id }: { id: string }) {
   const payer = latest?.payer ?? order?.payer
   const count = records?.length ?? 0
 
+  // Back to wherever the customer came from (the checkout, the shop, their receipts); else their receipts.
+  const back = () => (history.length > 1 ? history.back() : location.assign(payer ? `/receipts/${payer}` : "/receipts"))
+
   return (
     <Shell>
+      <button className="mb-4 text-sm text-muted-foreground hover:text-foreground" onClick={back}>
+        ← Back
+      </button>
       <div className="flex items-start justify-between gap-3">
         <div>
           <Muted>Receipt · {latest?.merchantName ?? order!.merchant}</Muted>

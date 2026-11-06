@@ -31,6 +31,9 @@ const checkout = new Checkout({ apiKey: process.env.CHECKOUT_API_KEY!, webhookSe
 app.on(["GET", "POST"], "/buy", async c => {
   const who = checkout.verifySignIn(getCookie(c, PASS_COOKIE))
   if (!who) return c.redirect("/signin?next=/buy")
+  // Already bought it? Open it, unless they asked to buy it again.
+  const mine = c.req.query("again") ? undefined : await ownedBy(who.wallet)
+  if (mine) return c.redirect(`/thanks?order=${mine.id}`)
   const order = await checkout.createOrder({ amount: REPORT_PRICE, description: "Mumbai Rent Index, Nov 2026", returnUrl: SHOP_URL + "/thanks" })
   return c.redirect(order.checkoutUrl)
 })
@@ -66,7 +69,17 @@ app.onError((err, c) => (err.message.includes("webhook signature") ? c.text("bad
 
 const signedIn = (c: Context) => checkout.verifySignIn(getCookie(c, PASS_COOKIE))?.wallet
 
-app.get("/", c => c.html(home(rentData, signedIn(c))))
+// The report this wallet already owns: paid, and not refunded in full.
+async function ownedBy(wallet?: string) {
+  if (!wallet) return undefined
+  const paid = await checkout.ordersPaidBy(wallet).catch(() => [])
+  return paid.find(o => o.status !== "open" && Number(o.refunded) < Number(o.amount))
+}
+
+app.get("/", async c => {
+  const wallet = signedIn(c)
+  return c.html(home(rentData, wallet, await ownedBy(wallet)))
+})
 
 // The shop's icons and link-preview image.
 const files: Record<string, string> = {

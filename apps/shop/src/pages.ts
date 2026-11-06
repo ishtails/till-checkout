@@ -147,6 +147,14 @@ const layout = (title: string, body: unknown, user?: string) => html`<!doctype h
     </body>
   </html>`
 
+// A customer who already owns the report gets it, not a second checkout.
+const owned = (o: Purchase) => html`<a class="btn" href="/thanks?order=${o.id}">Open your report</a>
+  <p class="note">
+    <span class="dot"></span>
+    You bought this on ${new Date(o.createdAt * 1000).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}.
+    <a href="/purchases">My purchases</a> · <a href="/buy?again=1">Buy it again</a>
+  </p>`
+
 const buyButton = (user?: string) => html`<form method="post" action="/buy">
     <button class="btn">Buy the report <span class="price">$0.10</span></button>
   </form>
@@ -155,7 +163,7 @@ const buyButton = (user?: string) => html`<form method="post" action="/buy">
     ${user ? html`Signed in with Till. Pay with the same email, no gas.` : html`Sign in with Till, then pay with just your email. No wallet app, no gas.`}
   </p>`
 
-export const home = (rows: Row[], user?: string) =>
+export const home = (rows: Row[], user?: string, mine?: Purchase) =>
   layout(
     "Brickline · Rent data for Indian cities",
     html`
@@ -165,7 +173,7 @@ export const home = (rows: Row[], user?: string) =>
             <span class="eyebrow">November 2026 · ${rows.length} neighbourhoods</span>
             <h1 class="serif">What does a 2BHK really cost in Mumbai?</h1>
             <p class="lead">Median monthly rents for 1BHK and 2BHK flats, neighbourhood by neighbourhood. One clean report, updated every month.</p>
-            ${buyButton(user)}
+            ${mine ? owned(mine) : buyButton(user)}
           </div>
           <div class="card preview">
             <h3>Mumbai Rent Index</h3>
@@ -267,7 +275,7 @@ export const locked = (signInHref: string, signedInAs?: string) =>
     signedInAs,
   )
 
-type Purchase = { id: string; description: string; amount: string; refunded: string; status: string; createdAt: number }
+export type Purchase = { id: string; description: string; amount: string; refunded: string; status: string; createdAt: number }
 
 export const purchases = (orders: Purchase[], user: string) =>
   layout(
