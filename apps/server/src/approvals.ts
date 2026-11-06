@@ -25,7 +25,9 @@ const filePolicy = (): Policy => JSON.parse(readFileSync(config.agentPolicyFile,
 // What the console shows besides the log: the agent's owner, its policy (with the owner's signed
 // limits applied) and where its log is. `limits` carries the signature, so the agent checks it itself.
 approvals.get("/v1/agent", c => {
-  const signed = store.getAgentLimits()
+  // Limits count only while their signer is still an owner, as the agent itself checks.
+  const stored = store.getAgentLimits()
+  const signed = stored && config.agentOwners.includes(stored.by.toLowerCase()) ? stored : undefined
   return c.json({
     name: AGENT,
     owner: config.agentOwners[0] ?? null,
