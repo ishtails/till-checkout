@@ -10,6 +10,7 @@ export type Merchant = {
   webhookSecret: string
   evmAddress: Address
   hederaAccountId: string
+  siteUrl?: string // the shop's own site: "Sign in with Till" only returns there
 }
 
 // The registered merchants. The relayer only ever pays gas for these (drain rule 2).

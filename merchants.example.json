@@ -6,6 +6,7 @@
     "webhookUrl": "http://localhost:3002/webhooks/checkout",
     "webhookSecret": "whsec_change_me",
     "evmAddress": "0x0000000000000000000000000000000000000000",
-    "hederaAccountId": "0.0.0"
+    "hederaAccountId": "0.0.0",
+    "siteUrl": "http://localhost:3002"
   }
 ]

@@ -7,6 +7,7 @@ import { gas } from "./gas"
 import { orders } from "./orders"
 import { pay } from "./pay"
 import { refund } from "./refund"
+import { signin } from "./signin"
 import { relayerStatus } from "./relayer"
 
 const app = new Hono()
@@ -19,6 +20,7 @@ app.route("/", refund)
 app.route("/", facilitatorRoutes)
 app.route("/", gas)
 app.route("/", faucet)
+app.route("/", signin)
 
 console.log(`Till server on http://localhost:${config.port}`)
 export default { port: config.port, fetch: app.fetch }

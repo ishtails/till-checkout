@@ -2,6 +2,7 @@ import { Hono } from "hono"
 import { bytesToHex, encodeAbiParameters, formatUnits, keccak256, parseUnits } from "viem"
 import { config } from "./config"
 import { findMerchant, findMerchantByKey, type Merchant } from "./merchants"
+import { signInBase } from "./signin"
 import { store, type Order } from "./store"
 
 const MIN_USD = 0.01
@@ -91,6 +92,7 @@ orders.get("/v1/merchant", c => {
   return c.json({
     id: merchant.id,
     name: merchant.name,
+    signInUrl: `${signInBase()}?merchant=${merchant.id}`,
     payTo: { "eip155:1874": merchant.evmAddress, "hedera:testnet": merchant.hederaAccountId },
   })
 })

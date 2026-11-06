@@ -6,6 +6,7 @@ import { config } from "./config"
 import { findMerchant } from "./merchants"
 import { RelayError, rateLimit, relay } from "./relayer"
 import { store } from "./store"
+import { issuePass } from "./signin"
 import { sendWebhook } from "./webhooks"
 
 const MAX_VALIDITY_SECONDS = 600
@@ -54,7 +55,8 @@ pay.post("/v1/checkout/:id/pay", rateLimit, async c => {
     store.putOrder(order)
     saveReceipt(order, { kind: "paid", at: order.paidAt })
     void sendWebhook(merchant, { type: "order.paid", orderId: order.id, amount: order.amount, txHash: hash, ts: Date.now() })
-    return c.json({ txHash: hash, explorer: explorerTx(hash) })
+    // The payer just proved their wallet by signing the payment, so they get a sign-in pass for this shop.
+    return c.json({ txHash: hash, explorer: explorerTx(hash), pass: issuePass(merchant, payer) })
   } catch (err) {
     if (err instanceof RelayError) return c.json({ error: err.message }, 400)
     throw err
