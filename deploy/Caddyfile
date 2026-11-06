@@ -1,5 +1,5 @@
-# HTTPS for the live demo. The pay app is static files; the server and shop run under systemd.
-pay.till.ishtails.xyz, pay.2-31-114-247.sslip.io {
+# HTTPS for the live demo. The landing page and pay app are the same static build; the server and shop run under systemd.
+till.ishtails.xyz, pay.till.ishtails.xyz, pay.2-31-114-247.sslip.io {
 	root * /home/till/till/apps/pay/dist
 	try_files {path} /index.html
 	file_server
@@ -9,6 +9,6 @@ api.till.ishtails.xyz, api.2-31-114-247.sslip.io {
 	reverse_proxy localhost:3001
 }
 
-till.ishtails.xyz, shop.2-31-114-247.sslip.io {
+shop.till.ishtails.xyz, shop.2-31-114-247.sslip.io {
 	reverse_proxy localhost:3002
 }

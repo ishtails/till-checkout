@@ -2,6 +2,7 @@ import { PrivyProvider } from "@privy-io/react-auth"
 import { createRoot } from "react-dom/client"
 import { defineChain } from "viem"
 import { App } from "./app"
+import { Landing } from "./landing"
 import "./index.css"
 
 const whitechain = defineChain({
@@ -12,17 +13,21 @@ const whitechain = defineChain({
   blockExplorers: { default: { name: "Whitechain Explorer", url: "https://explorer.testnet.whitechain.io" } },
 })
 
-createRoot(document.getElementById("root")!).render(
-  <PrivyProvider
-    appId={import.meta.env.VITE_PRIVY_APP_ID}
-    config={{
-      loginMethods: ["email", "google"],
-      embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" } },
-      defaultChain: whitechain,
-      supportedChains: [whitechain],
-      appearance: { theme: "light" },
-    }}
-  >
-    <App />
-  </PrivyProvider>,
-)
+const root = createRoot(document.getElementById("root")!)
+// The landing page needs no wallet, so it renders without Privy.
+if (location.pathname === "/") root.render(<Landing />)
+else
+  root.render(
+    <PrivyProvider
+      appId={import.meta.env.VITE_PRIVY_APP_ID}
+      config={{
+        loginMethods: ["email", "google"],
+        embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" } },
+        defaultChain: whitechain,
+        supportedChains: [whitechain],
+        appearance: { theme: "light" },
+      }}
+    >
+      <App />
+    </PrivyProvider>,
+  )
