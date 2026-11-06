@@ -47,8 +47,14 @@ app.get("/", c => c.html(home(rentData)))
 app.get("/thanks", async c => {
   const orderId = c.req.query("order") ?? ""
   // The webhook normally arrives first; reading the order covers a missed one.
-  if (!unlocked.has(orderId) && orderId && (await checkout.getOrder(orderId)).status !== "open") unlockReport(orderId)
-  return c.html(unlocked.has(orderId) ? report(rentData) : waiting())
+  if (!unlocked.has(orderId) && orderId) {
+    const order = await checkout.getOrder(orderId).catch(() => undefined)
+    if (!order) return c.redirect("/")
+    if (order.status !== "open") unlockReport(orderId)
+  }
+  if (unlocked.has(orderId)) return c.html(report(rentData))
+  c.header("Refresh", "3") // check again in a few seconds, until the payment lands
+  return c.html(waiting())
 })
 
 console.log(`Demo shop on ${SHOP_URL}`)

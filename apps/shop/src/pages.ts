@@ -40,6 +40,7 @@ const layout = (title: string, body: unknown) => html`<!doctype html>
         .btn .price { background: rgba(255,255,255,.14); padding: 2px 8px; border-radius: 8px; font-weight: 500; }
         .note { font-size: 13px; color: var(--muted); margin-top: 12px; display: flex; align-items: center; gap: 6px; }
         .dot { width: 6px; height: 6px; border-radius: 99px; background: var(--till); display: inline-block; }
+        .pulse { animation: pulse 1.2s ease-in-out infinite; } @keyframes pulse { 50% { opacity: .25; } }
         .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 1px 2px rgb(27 24 19 / .04), 0 12px 32px -16px rgb(27 24 19 / .12); }
         .preview { padding: 22px; position: relative; overflow: hidden; }
         .preview h3 { margin: 0; font-size: 15px; font-weight: 600; } .preview .sub { font-size: 13px; color: var(--muted); margin: 2px 0 14px; }
@@ -165,8 +166,10 @@ export const waiting = () =>
     "Waiting for payment · Brickline",
     html`
       <main class="page">
-        <h1 class="serif">Waiting for your payment</h1>
-        <p class="lead">This page unlocks the report as soon as the payment is confirmed. <a href="">Refresh</a></p>
+        <meta http-equiv="refresh" content="3" />
+        <span class="eyebrow"><span class="dot pulse"></span> Checking every few seconds</span>
+        <h1 class="serif" style="margin-top:16px">Confirming your payment</h1>
+        <p class="lead">Your report opens here on its own as soon as the payment is confirmed. It usually takes a few seconds.</p>
       </main>
     `,
   )
