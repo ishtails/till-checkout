@@ -109,8 +109,7 @@ const layout = (title: string, body: unknown, user?: string) => html`<!doctype h
     </head>
     <body>
       <div class="demo">
-        A live demo of <a href="https://github.com/ishtails/till-checkout">Till</a>, a checkout for people and AI agents.
-        Sign in with any email, get free test USDT, and buy the report.
+        Demo shop for <a href="https://github.com/ishtails/till-checkout">Till</a> · testnet, test USDT is free
       </div>
       <div class="wrap">
         <nav>
@@ -160,7 +159,7 @@ const buyButton = (user?: string) => html`<form method="post" action="/buy">
   </form>
   <p class="note">
     <span class="dot"></span>
-    ${user ? html`Signed in with Till. Pay with the same email, no gas.` : html`Sign in with Till, then pay with just your email. No wallet app, no gas.`}
+    Pay with your email. No gas.
   </p>`
 
 export const home = (rows: Row[], user?: string, mine?: Purchase) =>
@@ -250,7 +249,7 @@ export const waiting = (user?: string) =>
         <meta http-equiv="refresh" content="3" />
         <span class="eyebrow"><span class="dot pulse"></span> Checking every few seconds</span>
         <h1 class="serif" style="margin-top:16px">Confirming your payment</h1>
-        <p class="lead">Your report opens here on its own as soon as the payment is confirmed. It usually takes a few seconds.</p>
+        <p class="lead">Your report opens automatically. Usually a few seconds.</p>
       </main>
     `,
     user,
@@ -266,7 +265,7 @@ export const locked = (signInHref: string, signedInAs?: string) =>
         <p class="lead">
           ${signedInAs
             ? html`You're signed in as <code>${signedInAs.slice(0, 6)}…${signedInAs.slice(-4)}</code>, which didn't pay for this report. Sign in with the email you paid with.`
-            : html`This report opens only for the person who bought it. Sign in with the email you paid with. We don't keep accounts: Till confirms it's you.`}
+            : html`Only the buyer can open this report.`}
         </p>
         <a class="btn" href="${signInHref}">Sign in with Till</a>
         <p class="note" style="margin-top:20px"><a href="/">← Back to the shop</a></p>
@@ -284,7 +283,7 @@ export const purchases = (orders: Purchase[], user: string) =>
       <main class="page">
         <span class="eyebrow">Signed in with Till · ${short(user)}</span>
         <h1 class="serif" style="margin-top:16px">My purchases</h1>
-        <p class="lead">Everything this wallet bought from Brickline. We don't keep accounts: Till tells us which wallet you are, and what it paid for.</p>
+        <p class="lead">Everything you bought from Brickline.</p>
         ${orders.length === 0
           ? html`<div class="card preview"><p class="sub" style="margin:0">Nothing yet. <a href="/#report">Buy the report</a>.</p></div>`
           : html`<div class="card preview">

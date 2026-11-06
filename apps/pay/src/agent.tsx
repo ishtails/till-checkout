@@ -75,11 +75,11 @@ const LABEL: Record<Entry["type"], { text: string; variant: "paid" | "blocked" |
 // Whether the allowlisted merchant is in Till's registry on Arkiv, at the same addresses.
 function OnArkiv({ listing, payTo, loading }: { listing?: ListingRecord; payTo: Record<string, string>; loading: boolean }) {
   if (loading) return <p className="mt-1 text-xs text-muted-foreground">Checking Arkiv…</p>
-  if (!listing) return <p className="mt-1 text-xs text-destructive">Not listed on Arkiv, so every payment to it is blocked.</p>
+  if (!listing) return <p className="mt-1 text-xs text-destructive">Not on Arkiv · payments blocked</p>
   const matches = Object.entries(payTo).every(([n, a]) => (listing.payTo as Record<string, string>)[n]?.toLowerCase() === a.toLowerCase())
   return (
     <RecordLink className="mt-1" href={listing.explorerUrl}>
-      {matches ? "Found on Arkiv, same addresses" : "On Arkiv, but at different addresses"}
+      {matches ? "Matches Arkiv" : "Doesn't match Arkiv"}
     </RecordLink>
   )
 }
@@ -94,7 +94,7 @@ function IdentityCard({ identity, topicId }: { identity?: AgentIdentity | "error
         <p className="flex flex-wrap items-center gap-2 text-sm">
           <SealCheckIcon className="size-4 text-brand" weight="fill" />
           <span className="font-medium">Verified agent #{identity.agentId}</span>
-          <span className="text-muted-foreground">ERC-8004 on Hedera · shops it pays can check who it is</span>
+          <span className="text-muted-foreground">ERC-8004 · Hedera</span>
         </p>
         <RecordLink href={identity.explorerUrl}>Registry on HashScan</RecordLink>
       </div>
@@ -152,7 +152,7 @@ function Console() {
         setApprovals(list)
         const fresh = list.filter(a => a.status === "pending" && !seen.current.has(a.id))
         if (fresh.length && seen.current.size + fresh.length > fresh.length) {
-          toast(`Your agent is asking to pay ${money(fresh[0].usd)}`, { description: `To ${fresh[0].merchant ?? short(fresh[0].payTo)}. Approve or deny it here.` })
+          toast(`Approval needed: ${money(fresh[0].usd)}`, { description: `To ${fresh[0].merchant ?? short(fresh[0].payTo)}` })
           navigator.vibrate?.(200)
         }
         list.forEach(a => seen.current.add(a.id))
@@ -183,7 +183,7 @@ function Console() {
       const message = decisionMessage(a, decision)
       const { signature } = await signMessage({ message }, { address, uiOptions: { showWalletUIs: false } })
       await api.decide(a.id, { decision, address, signature: signature as Hex })
-      toast.success(decision === "approve" ? `Approved ${money(a.usd)}. Your agent is paying now.` : "Denied. Nothing was paid.")
+      toast.success(decision === "approve" ? `Approved ${money(a.usd)}` : "Denied")
       setApprovals(await api.approvals())
     } catch (e) {
       toast.error(friendly((e as Error).message))
@@ -219,7 +219,7 @@ function Console() {
       const r = await api.setLimits({ limits, issuedAt, address, signature: signature as Hex })
       setInfo({ ...info, policy: r.policy, limits: r.limits })
       setDraft(undefined)
-      toast.success("New limits signed", { description: "Your agent checks your signature and uses them from its next payment." })
+      toast.success("Limits saved")
     } catch (e) {
       toast.error(friendly((e as Error).message))
     } finally {
@@ -266,18 +266,17 @@ function Console() {
       ) : !authenticated ? (
         <main className="mx-auto max-w-md px-4 py-16 text-center">
           <h1 className="text-xl">Agent console</h1>
-          <Muted className="mt-2">Only the agent's owner can open this: approve payments it pauses, and set its limits.</Muted>
+          <Muted className="mt-2">Sign in as the agent's owner.</Muted>
           <Button size="lg" className="mt-6" onClick={login}>
             Owner sign in
           </Button>
         </main>
       ) : !isOwner ? (
         <main className="mx-auto max-w-md px-4 py-16 text-center">
-          <h1 className="text-xl">This account isn't the agent's owner</h1>
+          <h1 className="text-xl">Not the owner</h1>
           <Muted className="mt-2">
-            You're signed in as {email ?? "this account"}
-            {address && <> with wallet <span className="font-mono">{short(address)}</span></>}. The owner's wallet is{" "}
-            <span className="font-mono">{short(info.owner ?? "")}</span>.
+            {email ?? "This account"} can't open this agent. Owner:{" "}
+            <span className="font-mono">{short(info.owner ?? "")}</span>
           </Muted>
           <Button size="lg" className="mt-6" onClick={switchAccount}>
             Switch account
@@ -292,7 +291,7 @@ function Console() {
               Research agent
             </h1>
             <Muted className="mt-1">
-              Pays for data on its own, within your limits. Every payment, block and approval is on a public log on Hedera.
+              Pays for data within your limits. Every action is logged on Hedera.
             </Muted>
           </div>
           {info?.topicId && <RecordLink href={`https://hashscan.io/testnet/topic/${info.topicId}`}>Log on HashScan · {info.topicId}</RecordLink>}
@@ -306,7 +305,7 @@ function Console() {
               <div className="min-w-0">
                 <p className="flex items-center gap-2 text-xs font-medium text-warning-foreground">
                   <PauseCircleIcon className="size-4" weight="fill" />
-                  Waiting for you · paused, nothing signed yet
+                  Approval needed
                 </p>
                 <p className="mt-2 text-lg font-semibold">
                   Pay {money(a.usd)} to {payee(a)}?
@@ -314,8 +313,8 @@ function Console() {
                 <Muted className="mt-1">
                   {a.resource && <span className="font-mono text-xs break-all">{a.resource}</span>}
                   <br />
-                  It passes every rule, but it's above your {money(info?.policy.approvalAboveUsd ?? 0)} auto-pay limit. Paid in{" "}
-                  {a.network.startsWith("hedera") ? "USDC on Hedera" : "USDT on Whitechain"}.
+                  Above your {money(info?.policy.approvalAboveUsd ?? 0)} auto-pay limit ·{" "}
+                  {a.network.startsWith("hedera") ? "USDC on Hedera" : "USDT on Whitechain"}
                 </Muted>
               </div>
               <div className="flex w-full gap-2 sm:w-auto">
@@ -324,7 +323,7 @@ function Console() {
                     Sign in to answer
                   </Button>
                 ) : !isOwner ? (
-                  <Muted>Only the owner ({short(info?.owner ?? "")}) can answer.</Muted>
+                  <Muted>Only the owner can answer.</Muted>
                 ) : (
                   <>
                     <Button variant="outline" size="lg" className="flex-1 sm:flex-none" isLoading={busy === a.id + "deny"} disabled={!!busy} onClick={() => decide(a, "deny")}>
@@ -347,13 +346,13 @@ function Console() {
             </div>
           </Stat>
           <Stat label="Auto-pays up to" value={money(info?.policy.approvalAboveUsd ?? 0)} note="Above that, it pauses and asks you." />
-          <Stat label="Stopped today" value={String(stopped)} note="Blocked by a rule, or denied by you." />
+          <Stat label="Stopped today" value={String(stopped)} note="Blocked or denied" />
         </div>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_320px]">
           <section>
             <h2 className="text-lg">Activity</h2>
-            <Muted>Read back from Hedera, not from the agent's memory.</Muted>
+            <Muted>From the Hedera log.</Muted>
             <Card className="mt-4 gap-0 divide-y py-0">
               {!log ? (
                 <Muted className="p-5">Loading…</Muted>
@@ -405,7 +404,7 @@ function Console() {
                 </Button>
               )}
             </div>
-            <Muted>Checked below the model, so it can't talk its way past them.</Muted>
+            <Muted>Enforced in the wallet, not the model.</Muted>
             {draft ? (
               <Card className="mt-4 gap-3 p-5 text-sm">
                 <LimitField label="Daily budget" value={draft.daily} onChange={v => setDraft({ ...draft, daily: v })} />
@@ -420,7 +419,7 @@ function Console() {
                     <LimitField label="Per day" value={m.day} onChange={v => setDraft({ ...draft, merchants: { ...draft.merchants, [name]: { ...m, day: v } } })} />
                   </div>
                 ))}
-                <p className="text-xs text-muted-foreground">You sign the new limits with your wallet. Payees can't be changed here.</p>
+                <p className="text-xs text-muted-foreground">Signed with your wallet.</p>
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1" disabled={busy === "limits"} onClick={() => setDraft(undefined)}>
                     Cancel
@@ -453,7 +452,7 @@ function Console() {
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">
-                Every payee is also checked against the seller's record on Arkiv. Any other payee, asset or amount over a cap is blocked outright. There's nothing to approve: a broken rule isn't unusual, it's wrong.
+                Payees must match their Arkiv listing. Anything else is blocked, not sent for approval.
               </p>
               {info?.limits && (
                 <p className="flex items-center gap-1.5 border-t pt-3 text-xs text-muted-foreground">

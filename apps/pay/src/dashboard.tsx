@@ -105,7 +105,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
       const value = typed ? parseUnits(typed, 6) : left
       if (value <= 0n || value > left) throw new Error(`Refund between $0.01 and $${(Number(left) / 1e6).toFixed(2)}.`)
       if (info.from.toLowerCase() !== address.toLowerCase()) {
-        throw new Error(`This order was paid to ${short(info.from)}. Sign in with that wallet to refund it.`)
+        throw new Error(`Paid to ${short(info.from)}. Sign in with that wallet to refund.`)
       }
       const { signature } = await signTypedData(
         {
@@ -131,7 +131,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
       })
       setAmounts(a => ({ ...a, [order.id]: "" }))
       toast.success(`Refunded $${(Number(value) / 1e6).toFixed(2)}`, {
-        description: "Sent back to the customer on Whitechain.",
+        description: "On Whitechain",
         action: { label: "View", onClick: () => window.open(explorerTx(txHash), "_blank") },
       })
       await load()
@@ -149,7 +149,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
       const info = await api.agentRefundInfo(p.key)
       const value = BigInt(info.remainingAtomic)
       if (value <= 0n) throw new Error("Already refunded in full.")
-      if (info.from.toLowerCase() !== address.toLowerCase()) throw new Error(`This was paid to ${short(info.from)}. Sign in with that wallet to refund it.`)
+      if (info.from.toLowerCase() !== address.toLowerCase()) throw new Error(`Paid to ${short(info.from)}. Sign in with that wallet to refund.`)
       const { signature } = await signTypedData(
         {
           domain: info.domain,
@@ -166,7 +166,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
         signature: signature as Hex,
       })
       toast.success(`Refunded $${(Number(value) / 1e6).toFixed(2)} to the agent`, {
-        description: "Sent back to its wallet on Whitechain.",
+        description: "On Whitechain",
         action: { label: "View", onClick: () => window.open(explorerTx(txHash), "_blank") },
       })
       setAgentPayments(await api.agentPayments().then(all => all.filter(x => x.merchantId === merchantId)))
@@ -250,23 +250,22 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
       ) : shop === "missing" ? (
         <main className="mx-auto max-w-md px-4 py-16 text-center">
           <h1 className="text-xl">No shop "{merchantId}" on Till</h1>
-          <Muted className="mt-2">Check the link, or open <a className="text-brand hover:underline" href="/dashboard/data-shop">/dashboard/data-shop</a>.</Muted>
+          <Muted className="mt-2">Check the link.</Muted>
         </main>
       ) : !authenticated ? (
         <main className="mx-auto max-w-md px-4 py-16 text-center">
           <h1 className="text-xl">{shop.name}'s dashboard</h1>
-          <Muted className="mt-2">Only the shop can open this: its orders, refunds, agent payments and gas tank.</Muted>
+          <Muted className="mt-2">Sign in with the shop's wallet.</Muted>
           <Button size="lg" className="mt-6" onClick={login}>
             Merchant sign in
           </Button>
         </main>
       ) : !isMerchant ? (
         <main className="mx-auto max-w-md px-4 py-16 text-center">
-          <h1 className="text-xl">This account isn't {shop.name}'s</h1>
+          <h1 className="text-xl">Not {shop.name}'s wallet</h1>
           <Muted className="mt-2">
-            You're signed in as {email ?? "this account"}
-            {address && <> with wallet <span className="font-mono">{short(address)}</span></>}. {shop.name} is paid to{" "}
-            <span className="font-mono">{short(shop.wallet)}</span>.
+            {email ?? "This account"} can't open this dashboard. Shop wallet:{" "}
+            <span className="font-mono">{short(shop.wallet)}</span>
           </Muted>
           <Button size="lg" className="mt-6" onClick={switchAccount}>
             Switch account
@@ -297,8 +296,8 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
             <p className="mt-1 text-xs text-muted-foreground">
               {tank
                 ? tank.balanceUsd <= 0
-                  ? "Empty: payments are paused until you top up."
-                  : `${tank.txLeft !== null ? `About ${tank.txLeft} more transactions. ` : ""}Your customers and agents pay no gas; you pay it at cost + ${Math.round(tank.margin * 100)}%, in USDT.`
+                  ? "Empty. Payments paused until you top up."
+                  : `${tank.txLeft !== null ? `~${tank.txLeft} transactions left · ` : ""}Gas at cost + ${Math.round(tank.margin * 100)}%`
                 : ""}
             </p>
           </Card>
@@ -320,7 +319,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
         <div className="mt-10 flex items-end justify-between gap-4">
           <div>
             <h2 className="text-lg">Orders</h2>
-            <Muted>Paid by people at checkout. Refund any amount up to what's left.</Muted>
+            <Muted>Paid at checkout.</Muted>
           </div>
           <Button
             variant="outline"
@@ -399,7 +398,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
 
         <div className="mt-10">
           <h2 className="text-lg">Agent payments</h2>
-          <Muted>Paid per API call over x402, straight to your wallet. Refund a Whitechain payment here, with no gas; refund Hedera ones from your Hedera wallet.</Muted>
+          <Muted>Paid per API call over x402.</Muted>
         </div>
         <Card className="mt-4 gap-0 py-0">
           {!agentPayments ? (
@@ -479,8 +478,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
             <AlertDialogDescription>
               {confirming && (
                 <>
-                  It goes back to {short(confirming.payer ?? "")} for “{confirming.description}”, on Whitechain. Refunds can't be undone, and the total can't pass what was paid
-                  (${refundLeft(confirming).toFixed(2)} left).
+                  To {short(confirming.payer ?? "")} on Whitechain. ${refundLeft(confirming).toFixed(2)} refundable. This can't be undone.
                 </>
               )}
             </AlertDialogDescription>
@@ -506,7 +504,7 @@ export function Dashboard({ merchantId }: { merchantId: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Refund ${confirmingAgent ? ((Number(confirmingAgent.amount) - Number(confirmingAgent.refunded ?? 0)) / 1e6).toFixed(2) : ""} to the agent?</AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmingAgent && <>It goes back to the agent's wallet {short(confirmingAgent.payer)} in USDT on Whitechain. You pay no gas. Refunds can't be undone.</>}
+              {confirmingAgent && <>To {short(confirmingAgent.payer)} on Whitechain. This can't be undone.</>}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

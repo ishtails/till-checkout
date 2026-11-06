@@ -181,7 +181,7 @@ export function Checkout({ id }: { id: string }) {
               <EnvelopeSimpleIcon />
               Continue with email
             </Button>
-            <p className="text-center text-xs text-muted-foreground">No wallet app, no seed phrase. Your email is enough.</p>
+            <p className="text-center text-xs text-muted-foreground">No wallet app needed.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -196,7 +196,7 @@ export function Checkout({ id }: { id: string }) {
             </div>
             {short && faucet?.enabled && drip.kind !== "sent" && (
               <div className="rounded-lg bg-secondary p-4 text-sm text-secondary-foreground">
-                <p>This is a testnet demo, and your new wallet has no test USDT yet.</p>
+                <p>Your wallet has no test USDT yet.</p>
                 <Button variant="outline" size="sm" className="mt-3" isLoading={drip.kind === "sending"} disabled={!address} onClick={getTestUsdt}>
                   {drip.kind !== "sending" && <CoinsIcon />}
                   {drip.kind === "sending" ? "Sending…" : `Get ${faucet.drip} test USDT`}

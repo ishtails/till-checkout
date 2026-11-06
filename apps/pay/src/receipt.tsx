@@ -118,12 +118,11 @@ export function Receipt({ id }: { id: string }) {
           <DatabaseIcon className="size-4 shrink-0" />
           {onArkiv ? (
             <span>
-              Read from Arkiv, {count} {count === 1 ? "record" : "records"}
-              {order && count < expected && ", saving the latest…"} ·{" "}
-              <RecordLink href={arkivExplorer("order_id", id)}>On Arkiv</RecordLink>
+              Stored on Arkiv{order && count < expected && ", updating…"} ·{" "}
+              <RecordLink href={arkivExplorer("order_id", id)}>View</RecordLink>
             </span>
           ) : (
-            <span>Saving this receipt to Arkiv…</span>
+            <span>Saving to Arkiv…</span>
           )}
         </div>
       )}

@@ -44,7 +44,7 @@ export function SignIn() {
     }
   }
 
-  if (!returnUrl) return <Shell><Muted>This sign-in link is missing where to go back to.</Muted></Shell>
+  if (!returnUrl) return <Shell><Muted>This sign-in link is invalid.</Muted></Shell>
   if (!shop && !error) return <Shell><Muted>Loading…</Muted></Shell>
 
   return (
@@ -54,7 +54,7 @@ export function SignIn() {
       </span>
       <h1 className="mt-4 text-xl">Sign in to {shop ?? "the shop"} with Till</h1>
       <Muted className="mt-1">
-        Use the email you paid with. {shop} only learns your wallet address, never your email or a password.
+        {shop} sees your wallet address, not your email.
       </Muted>
 
       <div className="mt-6 space-y-3">

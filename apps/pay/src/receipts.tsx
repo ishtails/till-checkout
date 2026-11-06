@@ -22,7 +22,7 @@ function Purchases({ address }: { address: string }) {
   }, [address])
 
   if (error) return <p className="text-destructive">{error}</p>
-  if (!records) return <Muted>Reading your purchases from Arkiv…</Muted>
+  if (!records) return <Muted>Loading…</Muted>
 
   // Records are oldest first, so the last one for an order is its current state.
   const orders = [...new Map(records.map(r => [r.orderId, r])).values()].reverse()
@@ -73,13 +73,13 @@ function Purchases({ address }: { address: string }) {
           )
         })}
       </ul>
-      {orders.length === 0 && <Muted className="mt-4">No purchases for this address yet.</Muted>}
+      {orders.length === 0 && <Muted className="mt-4">No purchases yet.</Muted>}
 
       <div className="mt-5 flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground">
         <DatabaseIcon className="size-4 shrink-0" />
         <span>
-          Read from Arkiv, {records.length} {records.length === 1 ? "record" : "records"}. No shop holds this list ·{" "}
-          <RecordLink href={arkivExplorer("payer", address)}>On Arkiv</RecordLink>
+          Stored on Arkiv ·{" "}
+          <RecordLink href={arkivExplorer("payer", address)}>View</RecordLink>
         </span>
       </div>
     </>
@@ -126,21 +126,21 @@ function YourAgent({ address }: { address: string }) {
         <div>
           <p className="flex items-center gap-2 font-medium">
             <RobotIcon className="size-4 text-brand" weight="duotone" />
-            Your agent · research agent #{RESEARCH_AGENT_ID}
+            Research agent #{RESEARCH_AGENT_ID}
           </p>
           <Muted className="mt-1 text-sm">
             {today
-              ? `Spent $${today.spent.toFixed(2)} of its $${budget.toFixed(2)} budget today · ${today.blocked} blocked`
-              : "Reading its log on Hedera…"}
+              ? `$${today.spent.toFixed(2)} of $${budget.toFixed(2)} spent today · ${today.blocked} blocked`
+              : "Loading…"}
           </Muted>
           {!!today?.waiting && (
             <p className="mt-1 text-sm font-medium text-warning-foreground">
-              {today.waiting} {today.waiting === 1 ? "payment is" : "payments are"} waiting for your approval
+              {today.waiting} waiting for approval
             </p>
           )}
         </div>
         <Button variant="outline" size="sm" onClick={() => location.assign(`/agent/${RESEARCH_AGENT_ID}`)}>
-          Open console <ArrowRightIcon />
+          Console <ArrowRightIcon />
         </Button>
       </div>
     </Card>
@@ -180,21 +180,20 @@ export function Account() {
       ) : !authenticated || !address ? (
         <main className="mx-auto max-w-md px-4 py-16 text-center">
           <h1 className="text-xl">Your account</h1>
-          <Muted className="mt-2">Everything you bought from any shop that uses Till, in one place. And your agent, if you have one.</Muted>
+          <Muted className="mt-2">Purchases and agents across Till shops.</Muted>
           <Button size="lg" className="mt-6" onClick={login}>
             <EnvelopeSimpleIcon />
-            Sign in with the email you paid with
+            Sign in
           </Button>
         </main>
       ) : (
         <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
           <div>
             <h1 className="text-xl">Your account</h1>
-            <Muted className="mt-1">Your purchases from every Till shop, and your agent.</Muted>
           </div>
           <YourAgent address={address} />
           <section>
-            <h2 className="mb-3 text-lg">Your purchases</h2>
+            <h2 className="mb-3 text-lg">Purchases</h2>
             <Card className="gap-0 p-5">
               <Purchases address={address} />
             </Card>
