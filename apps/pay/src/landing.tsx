@@ -346,7 +346,7 @@ export function Landing() {
           </RecordLink>
         </Section>
 
-        <Section eyebrow="Proof" title="Everything above happened on testnet. Click any of it.">
+        <Section eyebrow="Proof" title="Everything above happened on testnet.">
           <Reveal>
           <Card className="mt-8 gap-0 py-0">
             <ul>
@@ -381,8 +381,7 @@ export function Landing() {
       </main>
 
       <footer className="border-t">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-5 py-6 text-xs text-muted-foreground">
-          <span>Built solo by Kartik at ETHGlobal Mumbai, November 2026. Testnet only.</span>
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-end gap-2 px-5 py-6 text-xs text-muted-foreground">
           <span className="flex gap-4">
             <a className="hover:underline" href="/docs">
               Docs

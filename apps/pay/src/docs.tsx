@@ -401,8 +401,7 @@ export function Docs() {
       </div>
 
       <footer className="border-t">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-5 py-6 text-xs text-muted-foreground">
-          <span>Built solo by Kartik at ETHGlobal Mumbai, November 2026. Testnet only.</span>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-end gap-2 px-5 py-6 text-xs text-muted-foreground">
           <a className="hover:underline" href={REPO}>
             github.com/ishtails/till-checkout
           </a>
