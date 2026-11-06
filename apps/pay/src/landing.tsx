@@ -74,7 +74,7 @@ function StaggerGrid({ children, className }: { children: ReactNode; className?:
       custom={0.09}
     >
       {Children.map(children, child => (
-        <motion.div variants={resolveVariants(STAGGER_ITEM_VARIANTS)} transition={resolveTransition("smooth")}>
+        <motion.div className="h-full [&>*]:h-full" variants={resolveVariants(STAGGER_ITEM_VARIANTS)} transition={resolveTransition("smooth")}>
           {child}
         </motion.div>
       ))}
@@ -305,18 +305,22 @@ export function Landing() {
           </StaggerGrid>
         </Section>
 
-        <Section eyebrow="For developers" title="About 20 lines in the shop's own server.">
-          <Reveal className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_1.4fr]">
-            <div className="space-y-4 text-muted-foreground">
-              <p>Create an order and redirect to Till's hosted checkout. Unlock what was bought when the signed webhook arrives.</p>
-              <p>One more line puts an API behind x402, so agents can pay per call with no sign-up.</p>
-              <RecordLink className="text-sm" href={`${REPO}/blob/main/apps/shop/src/index.ts`}>
-                The demo shop's integration
-              </RecordLink>
+        <section className="border-t py-16 sm:py-20">
+          <Reveal className="grid items-center gap-8 lg:grid-cols-[1fr_1.4fr] lg:gap-12">
+            <div>
+              <Badge variant="paid">For developers</Badge>
+              <h2 className="mt-3 text-3xl text-balance sm:text-4xl">About 20 lines in the shop's own server.</h2>
+              <div className="mt-6 space-y-4 text-muted-foreground">
+                <p>Create an order and redirect to Till's hosted checkout. Unlock what was bought when the signed webhook arrives.</p>
+                <p>One more line puts an API behind x402, so agents can pay per call with no sign-up.</p>
+                <RecordLink className="text-sm" href={`${REPO}/blob/main/apps/shop/src/index.ts`}>
+                  The demo shop's integration
+                </RecordLink>
+              </div>
             </div>
             <CodeWindow code={integration} filename="shop/src/index.ts" />
           </Reveal>
-        </Section>
+        </section>
 
         <Section eyebrow="Built on" title="Each chain does one job. The merchant never sees any of it.">
           <StaggerGrid className="mt-8 grid gap-4 sm:grid-cols-3">
