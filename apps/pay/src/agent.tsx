@@ -114,7 +114,7 @@ export function AgentConsole() {
         // Mark the first load as seen, so old requests don't toast.
         if (seen.current.size === 0) seen.current.add("·")
       }, () => {})
-    const loadLog = () => info.topicId && readLog(info.topicId).then(setLog, () => {})
+    const loadLog = () => info.topicId && readLog(info.topicId).then(all => setLog(all.filter(e => e.type in LABEL && Number.isFinite(Number(e.usd)))), () => {}) // skips early test messages
     void loadApprovals()
     void loadLog()
     const a = setInterval(() => !document.hidden && loadApprovals(), 2000)
